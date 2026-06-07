@@ -1,0 +1,75 @@
+package com.saicomputer.sms.data.repo
+
+import com.saicomputer.sms.core.network.ApiClient
+import com.saicomputer.sms.data.dto.CancelEnrollmentInput
+import com.saicomputer.sms.data.dto.EditInstallmentsInput
+import com.saicomputer.sms.data.dto.EditInstallmentsResponse
+import com.saicomputer.sms.data.dto.EnrollmentCreateInput
+import com.saicomputer.sms.data.dto.EnrollmentGetResponse
+import com.saicomputer.sms.data.dto.EnrollmentPreviewInput
+import com.saicomputer.sms.data.dto.EnrollmentPreviewResult
+import com.saicomputer.sms.data.dto.InstallmentEnrollmentCreateInput
+import com.saicomputer.sms.data.dto.MarkCompleteInput
+import com.saicomputer.sms.data.dto.MarkCompleteResponse
+import com.saicomputer.sms.data.dto.OkResponse
+import com.saicomputer.sms.data.dto.SetExcludedFromBillingInput
+import com.saicomputer.sms.data.dto.SetExcludedFromBillingResult
+import com.saicomputer.sms.data.dto.SubscriptionEnrollmentCreateInput
+import com.saicomputer.sms.data.model.Enrollment
+import com.saicomputer.sms.data.model.Payment
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonObject
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/** {"EnrollmentID": "..."} — enrollments.get uses PascalCase. */
+@Serializable
+private data class EnrollmentIdPascalPayload(@SerialName("EnrollmentID") val enrollmentId: String)
+
+@Singleton
+class EnrollmentsRepository @Inject constructor(
+    private val api: ApiClient
+) {
+    suspend fun preview(input: EnrollmentPreviewInput): EnrollmentPreviewResult =
+        api.call("enrollments.preview", input)
+
+    suspend fun create(input: EnrollmentCreateInput): Enrollment = when (input) {
+        is InstallmentEnrollmentCreateInput -> api.call("enrollments.create", input)
+        is SubscriptionEnrollmentCreateInput -> api.call("enrollments.create", input)
+    }
+
+    /**
+     * enrollments.get returns the enrollment flat (with nested student/course/installments/
+     * topics) and a separate `payments` array. Decode both and wrap.
+     */
+    suspend fun get(enrollmentId: String): EnrollmentGetResponse {
+        val data = api.callRaw(
+            "enrollments.get",
+            api.json.encodeToJsonElement(EnrollmentIdPascalPayload(enrollmentId))
+        ).jsonObject
+        val enrollment: Enrollment = api.json.decodeFromJsonElement(data)
+        val payments: List<Payment> =
+            data["payments"]?.let { api.json.decodeFromJsonElement(it) } ?: emptyList()
+        return EnrollmentGetResponse(enrollment, payments)
+    }
+
+    suspend fun markComplete(input: MarkCompleteInput): MarkCompleteResponse =
+        api.call("enrollments.markComplete", input)
+
+    suspend fun cancel(input: CancelEnrollmentInput): OkResponse =
+        api.call("enrollments.cancel", input)
+
+    suspend fun editInstallments(input: EditInstallmentsInput): EditInstallmentsResponse =
+        api.call("enrollments.editInstallments", input)
+
+    suspend fun setExcludedFromBilling(
+        input: SetExcludedFromBillingInput
+    ): SetExcludedFromBillingResult =
+        api.call("enrollments.setExcludedFromBilling", input)
+}
+
+@kotlinx.serialization.Serializable
+internal data class EnrollmentIdPayload(val enrollmentId: String)
