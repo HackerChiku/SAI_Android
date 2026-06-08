@@ -9,6 +9,7 @@ import com.saicomputer.sms.data.dto.SubscriptionPaymentCreateInput
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.Installment
+import com.saicomputer.sms.data.model.InstallmentStatus
 import com.saicomputer.sms.data.model.PaymentMethod
 import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.data.repo.EnrollmentsRepository
@@ -26,10 +27,10 @@ data class PaymentFormState(
     val loading: Boolean = true,
     val submitting: Boolean = false,
     val enrollment: Enrollment? = null,
-    val installments: List<Installment> = emptyList(),
+    val allInstallments: List<Installment> = emptyList(),
     val selectedInstallmentId: String? = null,
     val amount: Int = 0,
-    val method: PaymentMethod = PaymentMethod.UPI,
+    val method: PaymentMethod = PaymentMethod.CASH,
     val upiRef: String = "",
     val paymentDate: String = LocalDate.now().toString(),
     val billingMonth: String = "",
@@ -40,12 +41,11 @@ data class PaymentFormState(
     val error: String? = null
 ) {
     val isSubscription: Boolean get() = enrollment?.billingType == BillingType.Subscription
-    val upiRefError: String?
-        get() = if (method == PaymentMethod.UPI && upiRef.isBlank()) "UPI reference is required" else null
+    val selectableInstallments: List<Installment>
+        get() = allInstallments.filter { it.status != InstallmentStatus.Paid }
     val canSubmit: Boolean
         get() = enrollment != null &&
             amount > 0 &&
-            upiRefError == null &&
             (isSubscription || selectedInstallmentId != null) &&
             (!isSubscription || billingMonth.isNotBlank()) &&
             !submitting
@@ -71,18 +71,20 @@ class PaymentFormViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val e = enrollmentsRepository.get(id).enrollment
-                val installments = e.installments.orEmpty()
-                    .filter { it.amountPaid < it.amountDue }
-                val firstUnpaid = installments.firstOrNull()
+                val allInstallments = e.installments.orEmpty().sortedBy { it.installmentNumber }
+                val defaultInstallment = allInstallments.firstOrNull { it.status == InstallmentStatus.Overdue }
+                    ?: allInstallments.firstOrNull { it.status != InstallmentStatus.Paid }
                 _state.update {
                     it.copy(
                         loading = false,
                         enrollment = e,
-                        installments = installments,
-                        selectedInstallmentId = firstUnpaid?.installmentId,
-                        amount = firstUnpaid?.let { inst -> inst.amountDue - inst.amountPaid }
+                        allInstallments = allInstallments,
+                        selectedInstallmentId = defaultInstallment?.installmentId,
+                        amount = defaultInstallment?.let { inst -> inst.amountDue - inst.amountPaid }
                             ?: (e.monthlyFee ?: 0),
-                        billingMonth = if (e.billingType == BillingType.Subscription) LocalDate.now().toString().substring(0, 7) else ""
+                        billingMonth = if (e.billingType == BillingType.Subscription) {
+                            LocalDate.now().toString().substring(0, 7)
+                        } else ""
                     )
                 }
             } catch (e: ApiException) {
@@ -94,10 +96,11 @@ class PaymentFormViewModel @Inject constructor(
     fun update(transform: (PaymentFormState) -> PaymentFormState) = _state.update(transform)
 
     fun selectInstallment(installment: Installment) {
+        if (installment.status == InstallmentStatus.Paid) return
         _state.update {
             it.copy(
                 selectedInstallmentId = installment.installmentId,
-                amount = installment.amountDue - installment.amountPaid
+                amount = (installment.amountDue - installment.amountPaid).coerceAtLeast(0)
             )
         }
     }

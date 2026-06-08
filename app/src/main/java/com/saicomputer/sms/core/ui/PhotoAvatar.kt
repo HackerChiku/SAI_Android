@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -30,7 +31,43 @@ fun PhotoAvatar(
     modifier: Modifier = Modifier,
     size: Int = 44
 ) {
-    InitialsAvatar(name = name, modifier = modifier, size = size)
+    ColoredPhotoAvatar(name = name, modifier = modifier, size = size)
+}
+
+private val AVATAR_PALETTES = listOf(
+    Pair(Color(0xFFDBEAFE), Color(0xFF1D4ED8)),
+    Pair(Color(0xFFEDE9FE), Color(0xFF6D28D9)),
+    Pair(Color(0xFFD1FAE5), Color(0xFF047857)),
+    Pair(Color(0xFFFFEDD5), Color(0xFFC2410C)),
+    Pair(Color(0xFFFCE7F3), Color(0xFFBE185D)),
+    Pair(Color(0xFFE0F2FE), Color(0xFF0369A1))
+)
+
+/** Avatar with pastel background color derived from the student's name. */
+@Composable
+fun ColoredPhotoAvatar(
+    name: String,
+    modifier: Modifier = Modifier,
+    size: Int = 44
+) {
+    val initials = remember(name) { initialsOf(name) }
+    val paletteIndex = remember(name) { kotlin.math.abs(name.hashCode()) % AVATAR_PALETTES.size }
+    val (background, foreground) = AVATAR_PALETTES[paletteIndex]
+
+    Box(
+        modifier = modifier
+            .size(size.dp)
+            .clip(CircleShape)
+            .background(background),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initials,
+            color = foreground,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = (size / 2.6).sp
+        )
+    }
 }
 
 /** Profile avatar that shows initials while loading or when no photo is available. */

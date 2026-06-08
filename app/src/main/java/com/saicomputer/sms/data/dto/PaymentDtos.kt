@@ -64,6 +64,18 @@ data class EditBillingMonthInput(
 )
 
 @Serializable
+data class PaymentListFilters(
+    @SerialName("EnrollmentID") val enrollmentId: String = "",
+    @SerialName("StudentID") val studentId: String = "",
+    @SerialName("PaymentMethod") val paymentMethod: String = "",
+    val status: String = "",
+    val from: String = "",
+    val to: String = "",
+    val limit: Int = 100,
+    val offset: Int = 0
+)
+
+@Serializable
 data class PaymentListResponse(
     val total: Int = 0,
     val offset: Int = 0,

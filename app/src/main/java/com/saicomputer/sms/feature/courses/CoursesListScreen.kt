@@ -1,34 +1,31 @@
 package com.saicomputer.sms.feature.courses
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,48 +42,88 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
-import com.saicomputer.sms.core.ui.CurrencyText
+import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
-import com.saicomputer.sms.core.ui.GenericBadge
 import com.saicomputer.sms.core.ui.LoadingSkeleton
+import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandGold
-import com.saicomputer.sms.core.ui.theme.ListItemSurface
+import com.saicomputer.sms.core.ui.theme.BrandBlueTint
+import com.saicomputer.sms.core.ui.theme.BrandRed
+import com.saicomputer.sms.core.ui.theme.OffWhite
+import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
+import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
+import com.saicomputer.sms.core.ui.theme.StatusAmber
+import com.saicomputer.sms.core.ui.theme.StatusBlue
 import com.saicomputer.sms.core.ui.theme.StatusEmerald
+import com.saicomputer.sms.core.ui.theme.StatusGray
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Course
+import com.saicomputer.sms.data.model.User
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val CardShape = RoundedCornerShape(14.dp)
+private val IconShape = RoundedCornerShape(10.dp)
+private val FieldShape = RoundedCornerShape(12.dp)
+
 @Composable
 fun CoursesListScreen(
+    user: User? = null,
     onNewCourse: () -> Unit,
     onOpenCourse: (String) -> Unit,
     viewModel: CoursesListViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val user by viewModel.currentUser.collectAsStateWithLifecycle()
     val canCreate = can(user, "courses.create")
 
-    Scaffold(
-        floatingActionButton = {
-            if (canCreate) {
-                FloatingActionButton(onClick = onNewCourse) {
-                    Icon(Icons.Outlined.Add, contentDescription = "New course")
-                }
-            }
-        }
-    ) { padding ->
-        when (val s = state) {
-            is UiState.Loading -> LoadingSkeleton(Modifier.fillMaxSize().padding(padding))
-            is UiState.Error -> ErrorState(s.message, onRetry = viewModel::load, modifier = Modifier.fillMaxSize().padding(padding))
-            is UiState.Success -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(s.data) { course ->
-                        CourseRow(course, onClick = { onOpenCourse(course.courseId) })
+    Column(modifier = Modifier.fillMaxSize()) {
+        CoursesListHeader(
+            user = user,
+            canCreate = canCreate,
+            onNewCourse = onNewCourse
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(OffWhite)
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(Modifier.height(12.dp))
+
+            when (val s = state) {
+                is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
+                is UiState.Error -> ErrorState(
+                    message = s.message,
+                    onRetry = viewModel::load,
+                    modifier = Modifier.fillMaxSize()
+                )
+                is UiState.Success -> {
+                    if (s.data.isEmpty()) {
+                        EmptyState(
+                            title = "No courses yet",
+                            actionLabel = if (canCreate) "New Course" else null,
+                            onAction = if (canCreate) onNewCourse else null,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(s.data, key = { it.courseId }) { course ->
+                                CourseCard(
+                                    course = course,
+                                    onClick = { onOpenCourse(course.courseId) }
+                                )
+                            }
+                            if (canCreate) {
+                                item {
+                                    Spacer(Modifier.height(4.dp))
+                                    NewCourseButton(onClick = onNewCourse)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -93,140 +131,237 @@ fun CoursesListScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CourseRow(course: Course, onClick: () -> Unit) {
-    val billingColor = when (course.billingType) {
-        BillingType.Installment -> BrandBlue
-        BillingType.Subscription -> BrandGold
+private fun CoursesListHeader(
+    user: User?,
+    canCreate: Boolean,
+    onNewCourse: () -> Unit
+) {
+    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BrandBlue)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Courses",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = BaseWhite
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (canCreate) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(BrandRed)
+                        .clickable(onClick = onNewCourse),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.Add,
+                        contentDescription = "New course",
+                        tint = BaseWhite,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(BrandBlue.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CourseCard(course: Course, onClick: () -> Unit) {
+    val courseFeeLabel = if (course.billingType == BillingType.Subscription) {
+        "${Formatters.formatInr(course.monthlyFee)}/mo"
+    } else {
+        Formatters.formatInr(course.fee)
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = ListItemSurface),
+        shape = CardShape,
+        colors = CardDefaults.cardColors(containerColor = BaseWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.Top
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.MenuBook,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(26.dp)
-                )
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            course.courseName,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            course.courseFullName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    if (course.currentActiveEnrollments > 0) {
-                        Spacer(Modifier.width(8.dp))
-                        GenericBadge(
-                            "${course.currentActiveEnrollments} active",
-                            StatusEmerald,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    FeeColumn(label = "Course fee", amount = course.fee, emphasized = true)
-                    FeeColumn(label = "Enrollment", amount = course.enrollmentFee)
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(IconShape)
+                        .background(BrandBlueTint),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Outlined.Schedule,
+                        Icons.AutoMirrored.Outlined.MenuBook,
                         contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "${course.durationMonths} months",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = BrandBlue,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
+                Text(
+                    course.courseName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                CourseStatusIndicator(isActive = course.isActive)
+            }
 
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    GenericBadge(course.billingType.name, billingColor)
-                    if (course.billingType == BillingType.Subscription) {
-                        GenericBadge("${Formatters.formatInr(course.monthlyFee)}/mo", billingColor)
-                    } else {
-                        GenericBadge("Max ${course.maxInstallments} inst.", BrandBlue)
-                    }
-                    GenericBadge(
-                        if (course.hasTopics) "${course.topicsCount ?: 0} topics" else "No topics",
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (!course.isActive) {
-                        GenericBadge("Inactive", MaterialTheme.colorScheme.error)
-                    }
+            Text(
+                course.courseFullName,
+                style = MaterialTheme.typography.bodySmall,
+                color = OnSurfaceVariantLightColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Pill(
+                    text = course.billingType.name,
+                    color = StatusBlue,
+                    fontSize = 10.sp
+                )
+                if (course.generateCertificate) {
+                    Pill(text = "Certificate", color = StatusEmerald, fontSize = 10.sp)
                 }
+                if (course.hasTopics) {
+                    val count = course.topicsCount ?: 0
+                    val label = if (count == 1) "1 Topic" else "$count Topics"
+                    Pill(text = label, color = StatusAmber, fontSize = 10.sp)
+                }
+            }
+
+            HorizontalDivider(color = OutlineVariantLight)
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                CourseStatColumn(
+                    label = "Course Fee",
+                    value = courseFeeLabel,
+                    modifier = Modifier.weight(1f)
+                )
+                CourseStatColumn(
+                    label = "Enrollment Fee",
+                    value = Formatters.formatInr(course.enrollmentFee),
+                    modifier = Modifier.weight(1f)
+                )
+                CourseStatColumn(
+                    label = "Max Installments",
+                    value = course.maxInstallments.toString(),
+                    modifier = Modifier.weight(1f),
+                    alignEnd = true
+                )
             }
         }
     }
 }
 
 @Composable
-private fun FeeColumn(label: String, amount: Int, emphasized: Boolean = false) {
-    Column {
+private fun CourseStatusIndicator(isActive: Boolean) {
+    val color = if (isActive) StatusEmerald else StatusGray
+    val label = if (isActive) "Active" else "Inactive"
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            label,
+            color = color,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 11.sp
+        )
+    }
+}
+
+@Composable
+private fun CourseStatColumn(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    alignEnd: Boolean = false
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = OnSurfaceVariantLightColor,
             fontSize = 10.sp
         )
-        CurrencyText(
-            amount,
+        Text(
+            value,
             style = MaterialTheme.typography.bodyMedium,
-            bold = emphasized
+            fontWeight = FontWeight.Bold,
+            textAlign = if (alignEnd) TextAlign.End else TextAlign.Start
+        )
+    }
+}
+
+@Composable
+private fun NewCourseButton(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(FieldShape)
+            .background(BrandBlueTint)
+            .border(1.dp, BrandBlue.copy(alpha = 0.35f), FieldShape)
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Outlined.Add,
+            contentDescription = null,
+            tint = BrandBlue,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.size(6.dp))
+        Text(
+            "New Course",
+            color = BrandBlue,
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyLarge
         )
     }
 }

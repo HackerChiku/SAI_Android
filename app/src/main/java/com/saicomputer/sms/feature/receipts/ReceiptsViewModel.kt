@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.saicomputer.sms.core.network.ApiException
 import com.saicomputer.sms.core.result.UiState
 import com.saicomputer.sms.data.dto.ReceiptListFilters
+import com.saicomputer.sms.data.model.ReceiptDetail
 import com.saicomputer.sms.data.model.ReceiptListItem
 import com.saicomputer.sms.data.repo.ReceiptsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +34,22 @@ class ReceiptsViewModel @Inject constructor(
                 _state.value = UiState.Error(e.friendlyMessage())
             } catch (e: Exception) {
                 _state.value = UiState.Error(e.message ?: "Failed")
+            }
+        }
+    }
+
+    fun loadReceipt(
+        receiptId: String,
+        onSuccess: (ReceiptDetail) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                onSuccess(repository.get(receiptId).receipt)
+            } catch (e: ApiException) {
+                onError(e.friendlyMessage())
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to load receipt")
             }
         }
     }

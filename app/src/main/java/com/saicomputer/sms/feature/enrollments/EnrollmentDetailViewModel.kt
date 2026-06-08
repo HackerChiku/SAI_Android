@@ -16,8 +16,10 @@ import com.saicomputer.sms.data.dto.MarkTopicCompleteInput
 import com.saicomputer.sms.data.dto.SetExcludedFromBillingInput
 import com.saicomputer.sms.data.dto.UnmarkTopicInput
 import com.saicomputer.sms.data.model.Payment
+import com.saicomputer.sms.data.model.ReceiptDetail
 import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.data.repo.EnrollmentsRepository
+import com.saicomputer.sms.data.repo.ReceiptsRepository
 import com.saicomputer.sms.data.repo.SubscriptionsRepository
 import com.saicomputer.sms.data.repo.TopicsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +34,7 @@ class EnrollmentDetailViewModel @Inject constructor(
     private val repository: EnrollmentsRepository,
     private val topicsRepository: TopicsRepository,
     private val subscriptionsRepository: SubscriptionsRepository,
+    private val receiptsRepository: ReceiptsRepository,
     session: SessionManager
 ) : ViewModel() {
 
@@ -138,5 +141,21 @@ class EnrollmentDetailViewModel @Inject constructor(
     fun editEndDate(newDate: String, onMessage: (String) -> Unit) = run(onMessage) {
         subscriptionsRepository.editEndDate(EditEndDateInput(enrollmentId, newDate))
         "End date updated"
+    }
+
+    fun loadReceipt(
+        receiptId: String,
+        onSuccess: (ReceiptDetail) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                onSuccess(receiptsRepository.get(receiptId).receipt)
+            } catch (e: ApiException) {
+                onError(e.friendlyMessage())
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to load receipt")
+            }
+        }
     }
 }

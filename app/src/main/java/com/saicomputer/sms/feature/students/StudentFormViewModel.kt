@@ -1,10 +1,13 @@
 package com.saicomputer.sms.feature.students
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.saicomputer.sms.core.media.ImageCompressor
 import com.saicomputer.sms.core.network.ApiException
 import com.saicomputer.sms.core.session.SessionManager
 import com.saicomputer.sms.core.validation.Validators
+import com.saicomputer.sms.data.dto.FileUploadInput
 import com.saicomputer.sms.data.dto.StudentCreateInput
 import com.saicomputer.sms.data.dto.StudentUpdateInput
 import com.saicomputer.sms.data.model.Gender
@@ -40,6 +43,8 @@ data class StudentFormState(
     val oldRegistrationNumber: String = "",
     val backdateEnabled: Boolean = false,
     val effectiveCreatedAt: String? = null,
+    val photoFileLabel: String? = null,
+    val aadhaarFileLabel: String? = null,
     val error: String? = null
 ) {
     val nameError: String? get() = if (fullName.isNotBlank()) null else null
@@ -65,6 +70,7 @@ data class StudentFormState(
 @HiltViewModel
 class StudentFormViewModel @Inject constructor(
     private val repository: StudentsRepository,
+    private val compressor: ImageCompressor,
     session: SessionManager
 ) : ViewModel() {
 
@@ -74,6 +80,8 @@ class StudentFormViewModel @Inject constructor(
     val currentUser: StateFlow<User?> = session.currentUser
 
     private var studentId: String? = null
+    private var pendingPhotoUri: Uri? = null
+    private var pendingAadhaarUri: Uri? = null
 
     fun initialize(id: String?) {
         if (studentId == id && (_state.value.isEdit || id == null)) return
@@ -144,6 +152,24 @@ class StudentFormViewModel @Inject constructor(
         }
     }
 
+    fun onGenderChange(gender: Gender?) {
+        _state.update { it.copy(gender = gender) }
+    }
+
+    fun onDateOfBirthChange(value: String) {
+        _state.update { it.copy(dateOfBirth = value) }
+    }
+
+    fun onPhotoPicked(uri: Uri?, label: String?) {
+        pendingPhotoUri = uri
+        _state.update { it.copy(photoFileLabel = label) }
+    }
+
+    fun onAadhaarPicked(uri: Uri?, label: String?) {
+        pendingAadhaarUri = uri
+        _state.update { it.copy(aadhaarFileLabel = label) }
+    }
+
     fun submit(onSaved: (String) -> Unit) {
         val s = _state.value
         if (!s.canSubmit) return
@@ -151,7 +177,7 @@ class StudentFormViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val id = if (s.isEdit) {
-                    repository.update(
+                    val updatedId = repository.update(
                         StudentUpdateInput(
                             studentId = studentId!!,
                             fullName = s.fullName.trim(),
@@ -170,8 +196,10 @@ class StudentFormViewModel @Inject constructor(
                             oldRegistrationNumber = s.oldRegistrationNumber.ifBlank { null }
                         )
                     ).studentId
+                    uploadPendingDocuments(updatedId)
+                    updatedId
                 } else {
-                    repository.create(
+                    val createdId = repository.create(
                         StudentCreateInput(
                             fullName = s.fullName.trim(),
                             phoneNumber = s.phoneNumber.filter { c -> c.isDigit() },
@@ -190,6 +218,8 @@ class StudentFormViewModel @Inject constructor(
                             effectiveCreatedAt = if (s.backdateEnabled) s.effectiveCreatedAt else null
                         )
                     ).studentId
+                    uploadPendingDocuments(createdId)
+                    createdId
                 }
                 _state.update { it.copy(submitting = false) }
                 onSaved(id)
@@ -199,5 +229,27 @@ class StudentFormViewModel @Inject constructor(
                 _state.update { it.copy(submitting = false, error = e.message ?: "Failed to save") }
             }
         }
+    }
+
+    private suspend fun uploadPendingDocuments(studentId: String) {
+        pendingPhotoUri?.let { uri ->
+            val prepared = compressor.compressImage(uri)
+            if (prepared.sizeBytes <= PHOTO_MAX_BYTES) {
+                repository.replacePhoto(FileUploadInput(studentId, prepared.base64, prepared.mimeType))
+            }
+        }
+        pendingAadhaarUri?.let { uri ->
+            val prepared = compressor.compressImage(uri)
+            if (prepared.sizeBytes <= AADHAAR_MAX_BYTES) {
+                repository.replaceAadhaar(FileUploadInput(studentId, prepared.base64, prepared.mimeType))
+            }
+        }
+        pendingPhotoUri = null
+        pendingAadhaarUri = null
+    }
+
+    companion object {
+        const val PHOTO_MAX_BYTES = 2L * 1024 * 1024
+        const val AADHAAR_MAX_BYTES = 5L * 1024 * 1024
     }
 }

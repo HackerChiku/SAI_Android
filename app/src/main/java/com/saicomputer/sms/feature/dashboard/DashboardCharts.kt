@@ -21,6 +21,10 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.saicomputer.sms.data.model.MonthlyRevenuePoint
 import com.saicomputer.sms.data.model.PaymentMethodBreakdown
 
+private const val CHART_BLUE = "#0A3D91"
+private const val CHART_RED = "#BE123C"
+private const val CHART_GREEN = "#16A34A"
+
 @Composable
 fun MonthlyRevenueChart(
     points: List<MonthlyRevenuePoint>,
@@ -29,7 +33,7 @@ fun MonthlyRevenueChart(
     AndroidView(
         modifier = modifier
             .fillMaxWidth()
-            .height(220.dp),
+            .height(200.dp),
         factory = { ctx ->
             LineChart(ctx).apply {
                 description.isEnabled = false
@@ -39,20 +43,24 @@ fun MonthlyRevenueChart(
                 setScaleEnabled(false)
                 xAxis.position = XAxis.XAxisPosition.BOTTOM
                 xAxis.setDrawGridLines(false)
+                xAxis.textColor = AndroidColor.parseColor("#6B7280")
                 xAxis.granularity = 1f
+                axisLeft.setDrawGridLines(true)
+                axisLeft.gridColor = AndroidColor.parseColor("#E5E7EB")
+                axisLeft.textColor = AndroidColor.parseColor("#9CA3AF")
+                setDrawGridBackground(false)
             }
         },
         update = { chart ->
             val entries = points.mapIndexed { i, p -> Entry(i.toFloat(), p.amount.toFloat()) }
             val set = LineDataSet(entries, "Revenue").apply {
-                color = AndroidColor.parseColor("#1E3A8A")
-                setCircleColor(AndroidColor.parseColor("#1E3A8A"))
-                lineWidth = 2f
-                circleRadius = 3f
+                color = AndroidColor.parseColor(CHART_BLUE)
+                setCircleColor(AndroidColor.parseColor(CHART_BLUE))
+                lineWidth = 2.5f
+                circleRadius = 4f
                 setDrawValues(false)
-                setDrawFilled(true)
-                fillColor = AndroidColor.parseColor("#1E3A8A")
-                fillAlpha = 40
+                setDrawFilled(false)
+                mode = LineDataSet.Mode.CUBIC_BEZIER
             }
             chart.data = LineData(set)
             chart.xAxis.valueFormatter = IndexAxisValueFormatter(points.map { shortMonth(it.month) })
@@ -66,45 +74,53 @@ fun PaymentMethodsChart(
     breakdown: PaymentMethodBreakdown,
     modifier: Modifier = Modifier
 ) {
+    val total = breakdown.UPI + breakdown.CASH + breakdown.QR
     AndroidView(
         modifier = modifier
             .fillMaxWidth()
-            .height(220.dp),
+            .height(160.dp),
         factory = { ctx ->
             PieChart(ctx).apply {
                 description.isEnabled = false
                 isDrawHoleEnabled = true
-                holeRadius = 50f
-                transparentCircleRadius = 54f
-                setUsePercentValues(true)
-                legend.orientation = Legend.LegendOrientation.HORIZONTAL
-                legend.horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                holeRadius = 58f
+                transparentCircleRadius = 62f
+                setUsePercentValues(false)
+                legend.isEnabled = false
+                setDrawEntryLabels(false)
             }
         },
         update = { chart ->
             val entries = buildList {
                 if (breakdown.UPI > 0) add(PieEntry(breakdown.UPI.toFloat(), "UPI"))
-                if (breakdown.CASH > 0) add(PieEntry(breakdown.CASH.toFloat(), "CASH"))
+                if (breakdown.CASH > 0) add(PieEntry(breakdown.CASH.toFloat(), "Cash"))
                 if (breakdown.QR > 0) add(PieEntry(breakdown.QR.toFloat(), "QR"))
+            }
+            if (entries.isEmpty()) {
+                chart.clear()
+                chart.invalidate()
+                return@AndroidView
             }
             val set = PieDataSet(entries, "").apply {
                 colors = listOf(
-                    AndroidColor.parseColor("#2563EB"),
-                    AndroidColor.parseColor("#059669"),
-                    AndroidColor.parseColor("#D97706")
+                    AndroidColor.parseColor(CHART_BLUE),
+                    AndroidColor.parseColor(CHART_RED),
+                    AndroidColor.parseColor(CHART_GREEN)
                 )
-                valueTextColor = AndroidColor.WHITE
-                valueTextSize = 12f
-                sliceSpace = 2f
+                sliceSpace = 3f
+                setDrawValues(false)
             }
             chart.data = PieData(set)
+            chart.centerText = if (total > 0) "" else "No data"
             chart.invalidate()
         }
     )
 }
 
+fun paymentMethodPercent(value: Int, total: Int): Int =
+    if (total > 0) ((value.toFloat() / total) * 100).toInt() else 0
+
 private fun shortMonth(month: String): String {
-    // month is "yyyy-MM"; show "MMM"
     return try {
         val m = month.split("-")[1].toInt()
         listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")[m - 1]

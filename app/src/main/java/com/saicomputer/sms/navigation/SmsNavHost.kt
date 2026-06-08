@@ -34,6 +34,7 @@ import com.saicomputer.sms.feature.enrollments.EnrollmentDetailScreen
 import com.saicomputer.sms.feature.enrollments.EnrollmentWizardScreen
 import com.saicomputer.sms.feature.exports.ExportsScreen
 import com.saicomputer.sms.feature.payments.PaymentFormScreen
+import com.saicomputer.sms.feature.payments.PaymentsListScreen
 import com.saicomputer.sms.feature.receipts.ReceiptsListScreen
 import com.saicomputer.sms.feature.settings.InstituteSettingsScreen
 import com.saicomputer.sms.feature.settings.UserManagementScreen
@@ -122,16 +123,18 @@ fun SmsNavHost(
         }
 
         composable(Screen.Dashboard.route) {
-            MainShell(navController, currentUser, Screen.Dashboard.route, "Dashboard", logout) {
+            MainShell(navController, currentUser, Screen.Dashboard.route) {
                 DashboardScreen(
+                    user = currentUser,
                     onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) }
                 )
             }
         }
 
         composable(Screen.Students.route) {
-            MainShell(navController, currentUser, Screen.Students.route, "Students", logout) {
+            MainShell(navController, currentUser, Screen.Students.route) {
                 StudentsListScreen(
+                    user = currentUser,
                     onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
                     onNewStudent = { navController.navigate(Screen.StudentNew.route) }
                 )
@@ -139,11 +142,11 @@ fun SmsNavHost(
         }
 
         composable(Screen.More.route) {
-            // Legacy route — redirect to students (drawer replaces More tab).
-            MainShell(navController, currentUser, Screen.Students.route, "Students", logout) {
-                StudentsListScreen(
-                    onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
-                    onNewStudent = { navController.navigate(Screen.StudentNew.route) }
+            MainShell(navController, currentUser, Screen.More.route) {
+                MoreScreen(
+                    user = currentUser,
+                    onNavigate = { navController.navigate(it) },
+                    onLogout = logout
                 )
             }
         }
@@ -190,8 +193,9 @@ fun SmsNavHost(
         }
 
         composable(Screen.Search.route) {
-            MainShell(navController, currentUser, Screen.Search.route, "Search", logout) {
+            MainShell(navController, currentUser, Screen.Search.route) {
                 StudentsListScreen(
+                    user = currentUser,
                     onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
                     onNewStudent = { navController.navigate(Screen.StudentNew.route) }
                 )
@@ -200,8 +204,9 @@ fun SmsNavHost(
 
         // ---- Courses ----
         composable(Screen.Courses.route) {
-            MainShell(navController, currentUser, Screen.Courses.route, "Courses", logout) {
+            MainShell(navController, currentUser, Screen.Courses.route) {
                 CoursesListScreen(
+                    user = currentUser,
                     onNewCourse = { navController.navigate(Screen.CourseNew.route) },
                     onOpenCourse = { id -> navController.navigate(Screen.CourseDetail.create(id)) }
                 )
@@ -245,15 +250,30 @@ fun SmsNavHost(
                 type = NavType.StringType; nullable = true; defaultValue = null
             })
         ) { entry ->
-            EnrollmentWizardScreen(
-                studentId = entry.arguments?.getString(Screen.ARG_STUDENT_ID)?.takeIf { it.isNotBlank() },
-                onBack = { navController.popBackStack() },
-                onCreated = { eid ->
-                    navController.popBackStack()
-                    navController.navigate(Screen.EnrollmentDetail.create(eid))
-                },
-                snackbarController = snackbarController
-            )
+            val studentId = entry.arguments?.getString(Screen.ARG_STUDENT_ID)?.takeIf { it.isNotBlank() }
+            if (studentId == null) {
+                MainShell(navController, currentUser, Screen.EnrollmentNew.create()) {
+                    EnrollmentWizardScreen(
+                        studentId = null,
+                        onBack = { navController.popBackStack() },
+                        onCreated = { eid ->
+                            navController.popBackStack()
+                            navController.navigate(Screen.EnrollmentDetail.create(eid))
+                        },
+                        snackbarController = snackbarController
+                    )
+                }
+            } else {
+                EnrollmentWizardScreen(
+                    studentId = studentId,
+                    onBack = { navController.popBackStack() },
+                    onCreated = { eid ->
+                        navController.popBackStack()
+                        navController.navigate(Screen.EnrollmentDetail.create(eid))
+                    },
+                    snackbarController = snackbarController
+                )
+            }
         }
         composable(
             Screen.EnrollmentDetail.route,
@@ -285,7 +305,7 @@ fun SmsNavHost(
 
         // ---- Subscriptions ----
         composable(Screen.Subscriptions.route) {
-            MainShell(navController, currentUser, Screen.Subscriptions.route, "Subscriptions", logout) {
+            MainShell(navController, currentUser, Screen.Subscriptions.route) {
                 SubscriptionsListScreen(
                     onOpenEnrollment = { eid -> navController.navigate(Screen.EnrollmentDetail.create(eid)) }
                 )
@@ -294,31 +314,40 @@ fun SmsNavHost(
 
         // ---- Receipts / Certificates ----
         composable(Screen.Receipts.route) {
-            MainShell(navController, currentUser, Screen.Receipts.route, "Receipts", logout) {
-                ReceiptsListScreen(snackbarController = snackbarController)
+            MainShell(navController, currentUser, Screen.Receipts.route) {
+                ReceiptsListScreen(
+                    user = currentUser,
+                    snackbarController = snackbarController
+                )
             }
         }
         composable(Screen.Payments.route) {
-            MainShell(navController, currentUser, Screen.Receipts.route, "Receipts", logout) {
-                ReceiptsListScreen(snackbarController = snackbarController)
+            MainShell(navController, currentUser, Screen.Payments.route) {
+                PaymentsListScreen(
+                    user = currentUser,
+                    snackbarController = snackbarController
+                )
             }
         }
         composable(Screen.Certificates.route) {
-            MainShell(navController, currentUser, Screen.Certificates.route, "Certificates", logout) {
-                CertificatesListScreen(snackbarController = snackbarController)
+            MainShell(navController, currentUser, Screen.Certificates.route) {
+                CertificatesListScreen(
+                    user = currentUser,
+                    snackbarController = snackbarController
+                )
             }
         }
 
         // ---- Audit ----
         composable(Screen.Audit.route) {
-            MainShell(navController, currentUser, Screen.Audit.route, "Audit Log", logout) {
-                AuditScreen()
+            MainShell(navController, currentUser, Screen.Audit.route) {
+                AuditScreen(user = currentUser)
             }
         }
 
         // ---- Settings / Users / Exports ----
         composable(Screen.Settings.route) {
-            MainShell(navController, currentUser, Screen.Settings.route, "Settings", logout) {
+            MainShell(navController, currentUser, Screen.Settings.route) {
                 InstituteSettingsScreen(
                     onOpenUsers = { navController.navigate(Screen.Users.route) },
                     snackbarController = snackbarController
@@ -332,8 +361,11 @@ fun SmsNavHost(
             )
         }
         composable(Screen.Exports.route) {
-            MainShell(navController, currentUser, Screen.Exports.route, "Exports", logout) {
-                ExportsScreen(snackbarController = snackbarController)
+            MainShell(navController, currentUser, Screen.Exports.route) {
+                ExportsScreen(
+                    user = currentUser,
+                    snackbarController = snackbarController
+                )
             }
         }
     }

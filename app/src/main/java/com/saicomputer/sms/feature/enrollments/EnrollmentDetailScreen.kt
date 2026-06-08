@@ -1,47 +1,50 @@
 package com.saicomputer.sms.feature.enrollments
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.EventRepeat
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.MoreHoriz
-import androidx.compose.material.icons.outlined.Payments
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Topic
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,9 +54,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,19 +67,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.CurrencyText
-import com.saicomputer.sms.core.ui.DateText
 import com.saicomputer.sms.core.ui.ErrorState
-import com.saicomputer.sms.core.ui.GenericBadge
-import com.saicomputer.sms.core.ui.ListItemCard
-import com.saicomputer.sms.core.ui.ListItemIconBox
 import com.saicomputer.sms.core.ui.LoadingSkeleton
-import com.saicomputer.sms.core.ui.SmsTopBar
+import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.TopicsProgressBar
+import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandGold
-import com.saicomputer.sms.core.ui.theme.StatusAmber
+import com.saicomputer.sms.core.ui.theme.BrandBlueTint
+import com.saicomputer.sms.core.ui.theme.BrandRed
+import com.saicomputer.sms.core.ui.theme.OffWhite
+import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
+import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
 import com.saicomputer.sms.core.ui.theme.StatusEmerald
 import com.saicomputer.sms.core.ui.theme.StatusGray
 import com.saicomputer.sms.core.ui.theme.StatusRed
@@ -84,7 +89,19 @@ import com.saicomputer.sms.data.model.EnrollmentStatus
 import com.saicomputer.sms.data.model.EnrollmentTopic
 import com.saicomputer.sms.data.model.Installment
 import com.saicomputer.sms.data.model.InstallmentStatus
+import com.saicomputer.sms.data.model.Payment
+import com.saicomputer.sms.data.model.PaymentMethod
+import com.saicomputer.sms.data.model.PaymentStatus
+import com.saicomputer.sms.data.model.TopicDurationUnit
 import com.saicomputer.sms.data.model.TopicsSummary
+
+private val CardShape = RoundedCornerShape(14.dp)
+private val FieldShape = RoundedCornerShape(12.dp)
+private val PillShape = RoundedCornerShape(50.dp)
+private val BackdateOrange = Color(0xFFEA580C)
+private val PaidRowTint = Color(0xFFD1FAE5)
+private val OverdueRowTint = Color(0xFFFEE2E2)
+private val PendingRowTint = Color(0xFFFFF7ED)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,24 +120,32 @@ fun EnrollmentDetailScreen(
     val msg: (String) -> Unit = { snackbarController.show(scope, it) }
 
     val topBarTitle = when (val s = state) {
-        is UiState.Success -> s.data.enrollment.courseName ?: "Enrollment"
+        is UiState.Success -> {
+            val e = s.data.enrollment
+            val student = e.studentName ?: "Student"
+            val course = e.courseName ?: e.courseId
+            "$student — $course"
+        }
         else -> "Enrollment"
     }
 
     when (val s = state) {
         is UiState.Loading -> {
-            Scaffold(topBar = { SmsTopBar(title = topBarTitle, onBack = onBack) }) { padding ->
-                LoadingSkeleton(Modifier.fillMaxSize().padding(padding))
+            Column(Modifier.fillMaxSize().background(OffWhite)) {
+                EnrollmentDetailHeader(title = topBarTitle, onBack = onBack)
+                LoadingSkeleton(Modifier.fillMaxSize())
             }
         }
         is UiState.Error -> {
-            Scaffold(topBar = { SmsTopBar(title = topBarTitle, onBack = onBack) }) { padding ->
-                ErrorState(s.message, onRetry = viewModel::reload, modifier = Modifier.fillMaxSize().padding(padding))
+            Column(Modifier.fillMaxSize().background(OffWhite)) {
+                EnrollmentDetailHeader(title = topBarTitle, onBack = onBack)
+                ErrorState(s.message, onRetry = viewModel::reload, modifier = Modifier.fillMaxSize())
             }
         }
         is UiState.Success -> {
             EnrollmentDetailContent(
                 e = s.data.enrollment,
+                payments = s.data.payments.orEmpty(),
                 canEditInstallments = can(user, "enrollments.editInstallments"),
                 canMarkComplete = can(user, "enrollments.markComplete"),
                 canCancel = can(user, "enrollments.cancel"),
@@ -128,7 +153,6 @@ fun EnrollmentDetailScreen(
                 canMarkTopics = can(user, "enrollments.topics.markComplete"),
                 canUnmarkTopics = can(user, "enrollments.topics.unmark"),
                 canBackdate = can(user, "system.backdate"),
-                canSubExtend = can(user, "subscriptions.extend"),
                 onBack = onBack,
                 topBarTitle = topBarTitle,
                 onRecordPayment = { onRecordPayment(s.data.enrollment.enrollmentId) },
@@ -143,6 +167,7 @@ fun EnrollmentDetailScreen(
 @Composable
 private fun EnrollmentDetailContent(
     e: Enrollment,
+    payments: List<Payment>,
     canEditInstallments: Boolean,
     canMarkComplete: Boolean,
     canCancel: Boolean,
@@ -150,7 +175,6 @@ private fun EnrollmentDetailContent(
     canMarkTopics: Boolean,
     canUnmarkTopics: Boolean,
     canBackdate: Boolean,
-    canSubExtend: Boolean,
     onBack: () -> Unit,
     topBarTitle: String,
     onRecordPayment: () -> Unit,
@@ -162,78 +186,30 @@ private fun EnrollmentDetailContent(
     var incompleteTopics by remember { mutableStateOf<List<String>>(emptyList()) }
     var showCancel by remember { mutableStateOf(false) }
     var topicToComplete by remember { mutableStateOf<EnrollmentTopic?>(null) }
-    var showExtend by remember { mutableStateOf(false) }
-    var showActions by remember { mutableStateOf(false) }
-    val actionSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
 
     val ongoing = e.enrollmentStatus == EnrollmentStatus.Ongoing
     val isInstallment = e.billingType == BillingType.Installment
-    val isSubscription = e.billingType == BillingType.Subscription
+    val feePercent = if (e.totalAmountDue > 0) {
+        (e.totalAmountPaid * 100 / e.totalAmountDue).coerceIn(0, 100)
+    } else 0
+    val topicsPercent = e.topicsSummary?.progressPercent ?: 0
 
-    val showFab = ongoing
+    Column(modifier = Modifier.fillMaxSize().background(OffWhite)) {
+        EnrollmentDetailHeader(title = topBarTitle, onBack = onBack)
 
-    if (showActions) {
-        ModalBottomSheet(
-            onDismissRequest = { showActions = false },
-            sheetState = actionSheetState
-        ) {
-            EnrollmentActionsSheet(
-                excludedFromBilling = e.excludedFromBilling,
-                isInstallment = isInstallment,
-                isSubscription = isSubscription,
-                canEditInstallments = canEditInstallments,
-                canSubExtend = canSubExtend,
-                canExclude = canExclude,
-                canMarkComplete = canMarkComplete,
-                canCancel = canCancel,
-                onRecordPayment = {
-                    showActions = false
-                    onRecordPayment()
-                },
-                onEditInstallments = {
-                    showActions = false
-                    showInstallmentEdit = true
-                },
-                onExtendSubscription = {
-                    showActions = false
-                    showExtend = true
-                },
-                onToggleBillingExclusion = {
-                    showActions = false
-                    viewModel.setExcluded(!e.excludedFromBilling, onMessage)
-                },
-                onMarkComplete = {
-                    showActions = false
-                    incompleteTopics = emptyList()
-                    showMarkComplete = true
-                },
-                onCancel = {
-                    showActions = false
-                    showCancel = true
-                }
-            )
-        }
-    }
-
-    Scaffold(
-        topBar = { SmsTopBar(title = topBarTitle, onBack = onBack) },
-        floatingActionButton = {
-            if (showFab) {
-                FloatingActionButton(onClick = { showActions = true }) {
-                    Icon(Icons.Outlined.MoreHoriz, contentDescription = "Enrollment actions")
-                }
-            }
-        }
-    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 16.dp),
+                .padding(bottom = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            EnrollmentHeroHeader(enrollment = e)
+            EnrollmentSummaryCard(
+                enrollment = e,
+                feePercent = feePercent,
+                topicsPercent = topicsPercent
+            )
 
             if (e.enrollmentFeeWaived && e.waivedFromCourseName != null) {
                 EnrollmentFeeWaiverBanner(
@@ -242,84 +218,72 @@ private fun EnrollmentDetailContent(
                 )
             }
 
-            DetailSection(
-                title = "Billing",
-                icon = Icons.Outlined.Payments,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Paid / Due",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        CurrencyText(e.totalAmountPaid, bold = true)
-                        Text(" / ", style = MaterialTheme.typography.bodyMedium)
-                        CurrencyText(e.totalAmountDue)
-                    }
-                }
-                if (e.balance > 0) {
-                    DetailInfoRow("Balance", Formatters.formatInr(e.balance))
-                }
-                if (isSubscription) {
-                    e.paidThroughDate?.let { DetailInfoRow("Paid through", Formatters.formatDateIst(it)) }
-                    e.monthlyFee?.let { DetailInfoRow("Monthly fee", Formatters.formatInr(it)) }
-                    if (e.isPendingCurrentMonth) {
-                        GenericBadge("Pending this month", StatusAmber)
-                    }
-                }
-                if (isInstallment) {
-                    DetailInfoRow("Max installments", e.installments?.size?.toString() ?: "—")
-                }
-            }
-
             if (isInstallment) {
                 e.installments?.takeIf { it.isNotEmpty() }?.let { installments ->
-                    DetailSection(
-                        title = "Installments (${installments.size})",
-                        icon = Icons.Outlined.Payments,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    ) {
-                        installments.forEachIndexed { index, installment ->
-                            if (index > 0) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant
-                                )
-                            }
-                            InstallmentRow(installment)
-                        }
-                    }
+                    InstallmentScheduleCard(
+                        installments = installments,
+                        canEdit = canEditInstallments && ongoing,
+                        onEdit = { showInstallmentEdit = true },
+                        onPay = onRecordPayment
+                    )
                 }
-            }
-
-            DetailSection(
-                title = "Schedule",
-                icon = Icons.Outlined.CalendarMonth,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
-                DetailInfoRow("Start date", Formatters.formatDateIst(e.startDate))
-                DetailInfoRow("Expected end", Formatters.formatDateIst(e.expectedEndDate))
-                e.actualEndDate?.let { DetailInfoRow("Actual end", Formatters.formatDateIst(it)) }
             }
 
             e.topics?.takeIf { it.isNotEmpty() }?.let { topics ->
-                CollapsibleTopicsSection(
+                TopicsCard(
                     topics = topics,
                     summary = e.topicsSummary,
                     canMark = canMarkTopics && ongoing,
                     canUnmark = canUnmarkTopics && ongoing,
                     onMark = { topicToComplete = it },
-                    onUnmark = { viewModel.unmarkTopic(it.enrollmentTopicId, onMessage) },
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    onUnmark = { viewModel.unmarkTopic(it.enrollmentTopicId, onMessage) }
                 )
             }
+
+            if (payments.isNotEmpty()) {
+                PaymentHistoryCard(
+                    payments = payments,
+                    onReceipt = { payment ->
+                        val receiptId = payment.receiptId
+                        if (receiptId.isNullOrBlank()) {
+                            onMessage("No receipt for this payment")
+                        } else {
+                            viewModel.loadReceipt(
+                                receiptId,
+                                onSuccess = { receipt ->
+                                    val url = receipt.previewUrl ?: receipt.downloadUrl
+                                    if (url != null) {
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                    } else {
+                                        onMessage("Receipt ${receipt.receiptId}")
+                                    }
+                                },
+                                onError = onMessage
+                            )
+                        }
+                    }
+                )
+            }
+
+            if (canExclude) {
+                BillingExclusionCard(
+                    excluded = e.excludedFromBilling,
+                    onToggle = { excluded -> viewModel.setExcluded(excluded, onMessage) }
+                )
+            }
+        }
+
+        if (ongoing) {
+            EnrollmentActionBar(
+                canMarkComplete = canMarkComplete,
+                canCancel = canCancel,
+                onRecordPayment = onRecordPayment,
+                onMarkComplete = {
+                    incompleteTopics = emptyList()
+                    showMarkComplete = true
+                },
+                onCancel = { showCancel = true }
+            )
         }
     }
 
@@ -362,462 +326,537 @@ private fun EnrollmentDetailContent(
     topicToComplete?.let { topic ->
         TopicCompleteDialog(
             topicName = topic.topicName,
-            onConfirm = { notes -> topicToComplete = null; viewModel.markTopicComplete(topic.enrollmentTopicId, notes, onMessage) },
+            onConfirm = { notes ->
+                topicToComplete = null
+                viewModel.markTopicComplete(topic.enrollmentTopicId, notes, onMessage)
+            },
             onDismiss = { topicToComplete = null }
         )
     }
+}
 
-    if (showExtend) {
-        ExtendSubscriptionDialog(
-            onConfirm = { months -> showExtend = false; viewModel.extendSubscription(months, onMessage) },
-            onDismiss = { showExtend = false }
+@Composable
+private fun EnrollmentDetailHeader(title: String, onBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BrandBlue)
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = BaseWhite)
+        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = BaseWhite,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(end = 12.dp)
         )
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EnrollmentHeroHeader(enrollment: Enrollment) {
+private fun EnrollmentSummaryCard(
+    enrollment: Enrollment,
+    feePercent: Int,
+    topicsPercent: Int
+) {
+    val statusLabel = when (enrollment.enrollmentStatus) {
+        EnrollmentStatus.Ongoing -> "Active"
+        EnrollmentStatus.Completed -> "Completed"
+        EnrollmentStatus.Cancelled -> "Cancelled"
+    }
     val statusColor = when (enrollment.enrollmentStatus) {
         EnrollmentStatus.Ongoing -> StatusEmerald
         EnrollmentStatus.Completed -> StatusGray
         EnrollmentStatus.Cancelled -> StatusRed
     }
-    val billingColor = when (enrollment.billingType) {
-        BillingType.Installment -> BrandBlue
-        BillingType.Subscription -> BrandGold
-        null -> StatusGray
-    }
 
-    ListItemCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = CardShape,
+        colors = CardDefaults.cardColors(containerColor = BaseWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.Top
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ListItemIconBox(icon = Icons.AutoMirrored.Outlined.MenuBook)
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+                ColoredPhotoAvatar(
+                    name = enrollment.studentName ?: enrollment.courseName ?: "?",
+                    size = 56
+                )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        enrollment.courseName ?: enrollment.courseId,
-                        style = MaterialTheme.typography.titleLarge,
+                        enrollment.studentName ?: "—",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        enrollment.courseFullName ?: enrollment.courseName ?: enrollment.courseId,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnSurfaceVariantLightColor,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    enrollment.courseFullName?.let {
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    enrollment.studentName?.let { name ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Person,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                name,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                    Text(
-                        enrollment.enrollmentId,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                }
+                Pill(statusLabel, statusColor, fontSize = 10.sp)
+            }
+
+            BillingTypePills(selected = enrollment.billingType)
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SummaryField("Start", Formatters.formatDateIst(enrollment.startDate), Modifier.weight(1f))
+                    SummaryField(
+                        "End / Expected",
+                        Formatters.formatDateIst(enrollment.expectedEndDate),
+                        Modifier.weight(1f)
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SummaryField("Effective Fee", Formatters.formatInr(enrollment.effectiveFee), Modifier.weight(1f))
+                    SummaryField(
+                        "Enrollment Fee",
+                        Formatters.formatInr(enrollment.effectiveEnrollmentFee),
+                        Modifier.weight(1f)
                     )
                 }
             }
 
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                GenericBadge(enrollment.enrollmentStatus.name, statusColor)
-                enrollment.billingType?.let { GenericBadge(it.name, billingColor) }
-                if (enrollment.excludedFromBilling) GenericBadge("Billing excluded", StatusAmber)
-                if (enrollment.isBackdate) GenericBadge("Backdated", StatusAmber)
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                StatItem(label = "Paid", amount = enrollment.totalAmountPaid, emphasized = true)
-                VerticalStatDivider()
-                StatItem(label = "Due", amount = enrollment.totalAmountDue)
-                VerticalStatDivider()
-                StatItem(label = "Balance", amount = enrollment.balance)
+            ProgressRow(label = "Fee paid", percent = feePercent, color = BrandBlue)
+            if (enrollment.topicsSummary?.hasTopics == true || !enrollment.topics.isNullOrEmpty()) {
+                ProgressRow(label = "Topics completed", percent = topicsPercent, color = BrandRed)
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun StatItem(label: String, amount: Int, emphasized: Boolean = false) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        CurrencyText(
-            amount,
-            style = if (emphasized) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall,
-            bold = emphasized
-        )
+private fun BillingTypePills(selected: BillingType?) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        BillingTypePill("Installment", selected == BillingType.Installment)
+        BillingTypePill("Monthly", selected == BillingType.Subscription)
+    }
+}
+
+@Composable
+private fun BillingTypePill(label: String, active: Boolean) {
+    Box(
+        modifier = Modifier
+            .clip(PillShape)
+            .background(if (active) BrandBlueTint else BaseWhite)
+            .border(
+                width = 1.dp,
+                color = if (active) BrandBlue.copy(alpha = 0.35f) else OutlineVariantLight,
+                shape = PillShape
+            )
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+    ) {
         Text(
             label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (active) BrandBlue else OnSurfaceVariantLightColor
         )
     }
 }
 
 @Composable
-private fun VerticalStatDivider() {
-    VerticalDivider(
-        modifier = Modifier.height(28.dp),
-        color = MaterialTheme.colorScheme.outlineVariant
-    )
+private fun SummaryField(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariantLightColor)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+    }
 }
 
 @Composable
-private fun CollapsibleTopicsSection(
+private fun ProgressRow(label: String, percent: Int, color: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+            Text("$percent%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+        }
+        LinearProgressIndicator(
+            progress = { percent / 100f },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
+            color = color,
+            trackColor = color.copy(alpha = 0.15f)
+        )
+    }
+}
+
+@Composable
+private fun InstallmentScheduleCard(
+    installments: List<Installment>,
+    canEdit: Boolean,
+    onEdit: () -> Unit,
+    onPay: () -> Unit
+) {
+    DetailCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Installment Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            if (canEdit) {
+                TextButton(onClick = onEdit) {
+                    Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.size(4.dp))
+                    Text("Edit", color = BrandBlue, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        installments.forEachIndexed { index, installment ->
+            if (index > 0) Spacer(Modifier.height(8.dp))
+            InstallmentScheduleRow(installment = installment, onPay = onPay)
+        }
+    }
+}
+
+@Composable
+private fun InstallmentScheduleRow(installment: Installment, onPay: () -> Unit) {
+    val rowStyle = when (installment.status) {
+        InstallmentStatus.Paid -> InstallmentRowStyle(PaidRowTint, "Paid", StatusEmerald, false)
+        InstallmentStatus.Overdue -> InstallmentRowStyle(OverdueRowTint, "Overdue", StatusRed, true)
+        InstallmentStatus.Partial -> InstallmentRowStyle(PendingRowTint, "Partial", BackdateOrange, true)
+        InstallmentStatus.Unpaid -> InstallmentRowStyle(PendingRowTint, "Pending", BackdateOrange, true)
+    }
+    val bg = rowStyle.background
+    val statusLabel = rowStyle.statusLabel
+    val statusColor = rowStyle.statusColor
+    val showPay = rowStyle.showPay
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(FieldShape)
+            .background(bg)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                "#${installment.installmentNumber}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                Formatters.formatInr(installment.amountDue),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                "Due: ${Formatters.formatDateIst(installment.dueDate)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = OnSurfaceVariantLightColor
+            )
+        }
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Pill(statusLabel, statusColor, fontSize = 10.sp)
+            if (showPay) {
+                Button(
+                    onClick = onPay,
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandRed, contentColor = BaseWhite),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(32.dp),
+                    contentPadding = ButtonDefaults.ContentPadding
+                ) {
+                    Text("Pay", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+private data class InstallmentRowStyle(
+    val background: Color,
+    val statusLabel: String,
+    val statusColor: Color,
+    val showPay: Boolean
+)
+
+@Composable
+private fun TopicsCard(
     topics: List<EnrollmentTopic>,
     summary: TopicsSummary?,
     canMark: Boolean,
     canUnmark: Boolean,
     onMark: (EnrollmentTopic) -> Unit,
-    onUnmark: (EnrollmentTopic) -> Unit,
-    modifier: Modifier = Modifier
+    onUnmark: (EnrollmentTopic) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val completedCount = summary?.completed ?: topics.count { it.isCompleted }
-    val totalCount = summary?.total ?: topics.size
-    val rotation by animateFloatAsState(if (expanded) 180f else 0f, label = "topicsExpand")
+    val percent = summary?.progressPercent
+        ?: if (topics.isNotEmpty()) topics.count { it.isCompleted } * 100 / topics.size else 0
 
-    ListItemCard(modifier = modifier) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = !expanded },
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Outlined.Topic,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Topics",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        "$completedCount of $totalCount completed",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(
-                    Icons.Outlined.ExpandMore,
-                    contentDescription = if (expanded) "Collapse topics" else "Expand topics",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.rotate(rotation)
-                )
-            }
-
-            SpacerBetweenHeaderAndBody(expanded, summary, completedCount, totalCount)
-
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
-                Column(
-                    modifier = Modifier.padding(top = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    topics.forEach { topic ->
-                        TopicRow(
-                            topic = topic,
-                            canMark = canMark,
-                            canUnmark = canUnmark,
-                            onMark = { onMark(topic) },
-                            onUnmark = { onUnmark(topic) }
-                        )
-                    }
-                }
-            }
+    DetailCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Topics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("$percent%", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
         }
-    }
-}
-
-@Composable
-private fun SpacerBetweenHeaderAndBody(
-    expanded: Boolean,
-    summary: TopicsSummary?,
-    completedCount: Int,
-    totalCount: Int
-) {
-    if (!expanded) {
-        TopicsProgressBar(
-            completed = completedCount,
-            total = totalCount,
-            modifier = Modifier.padding(top = 12.dp),
-            showLabel = false
+        Spacer(Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { percent / 100f },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
+            color = BrandBlue,
+            trackColor = BrandBlue.copy(alpha = 0.15f)
         )
-    } else {
-        summary?.let {
-            TopicsProgressBar(
-                completed = it.completed,
-                total = it.total,
-                modifier = Modifier.padding(top = 12.dp)
+        Spacer(Modifier.height(12.dp))
+        topics.forEachIndexed { index, topic ->
+            if (index > 0) {
+                HorizontalDivider(color = OutlineVariantLight, modifier = Modifier.padding(vertical = 10.dp))
+            }
+            TopicListRow(
+                topic = topic,
+                canMark = canMark,
+                canUnmark = canUnmark,
+                onMark = { onMark(topic) },
+                onUnmark = { onUnmark(topic) }
             )
         }
     }
 }
 
 @Composable
-private fun TopicRow(
+private fun TopicListRow(
     topic: EnrollmentTopic,
     canMark: Boolean,
     canUnmark: Boolean,
     onMark: () -> Unit,
     onUnmark: () -> Unit
 ) {
-    ListItemCard {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(topic.topicName, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (topic.isCompleted) {
-                    Text(
-                        "Completed ${Formatters.formatDateIst(topic.completedDate)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    Text(
-                        "${topic.estimatedDurationValue} ${topic.estimatedDurationUnit.name.lowercase()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+    val durationLabel = "${topic.estimatedDurationValue} ${topic.estimatedDurationUnit.labelFor(topic.estimatedDurationValue)}"
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                when {
+                    !topic.isCompleted && canMark -> Modifier.clickable(onClick = onMark)
+                    topic.isCompleted && canUnmark -> Modifier.clickable(onClick = onUnmark)
+                    else -> Modifier
                 }
+            ),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(
+            imageVector = if (topic.isCompleted) Icons.Outlined.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
+            contentDescription = null,
+            tint = if (topic.isCompleted) StatusEmerald else OnSurfaceVariantLightColor,
+            modifier = Modifier.size(22.dp)
+        )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                topic.topicName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                textDecoration = if (topic.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+            )
+            topic.description?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
             }
-            when {
-                topic.isCompleted && canUnmark -> {
-                    TextButton(onClick = onUnmark) { Text("Undo", fontSize = 12.sp) }
+            Box(
+                modifier = Modifier
+                    .clip(PillShape)
+                    .background(OffWhite)
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(durationLabel, style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariantLightColor)
+            }
+            if (topic.isCompleted) {
+                val completedLine = buildString {
+                    append("✓ Completed")
+                    topic.completedDate?.let { append(" ${Formatters.formatDateIst(it)}") }
+                    topic.completedBy?.let { append(" by $it") }
+                    topic.completionNotes?.let { append(" — '$it'") }
                 }
-                topic.isCompleted -> GenericBadge("Done", StatusEmerald)
-                canMark -> TextButton(onClick = onMark) { Text("Complete", fontSize = 12.sp) }
-                else -> GenericBadge("Pending", StatusAmber)
+                Text(
+                    completedLine,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = StatusEmerald,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
 }
 
+private fun TopicDurationUnit.labelFor(value: Int): String = when (this) {
+    TopicDurationUnit.Weeks -> if (value == 1) "Week" else "Weeks"
+    TopicDurationUnit.Months -> if (value == 1) "Month" else "Months"
+}
+
 @Composable
-private fun InstallmentRow(installment: Installment) {
-    val statusColor = when (installment.status) {
-        InstallmentStatus.Paid -> StatusEmerald
-        InstallmentStatus.Partial -> StatusAmber
-        InstallmentStatus.Overdue -> StatusRed
-        InstallmentStatus.Unpaid -> StatusGray
+private fun PaymentHistoryCard(payments: List<Payment>, onReceipt: (Payment) -> Unit) {
+    DetailCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Text("Payment History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(12.dp))
+        payments.forEachIndexed { index, payment ->
+            if (index > 0) {
+                HorizontalDivider(color = OutlineVariantLight, modifier = Modifier.padding(vertical = 10.dp))
+            }
+            PaymentHistoryRow(payment = payment, onReceipt = { onReceipt(payment) })
+        }
+    }
+}
+
+@Composable
+private fun PaymentHistoryRow(payment: Payment, onReceipt: () -> Unit) {
+    val isVoided = payment.status == PaymentStatus.Voided
+    val methodLabel = when (payment.paymentMethod) {
+        PaymentMethod.BANK_TRANSFER -> "Bank Transfer"
+        else -> payment.paymentMethod.name
     }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            CurrencyText(payment.amount, style = MaterialTheme.typography.titleMedium, bold = true)
             Text(
-                "Installment #${installment.installmentNumber}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            DateText(
-                installment.dueDate,
+                "${Formatters.formatDateIst(payment.paymentDate)} · $methodLabel",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = OnSurfaceVariantLightColor
+            )
+            Pill(
+                text = if (isVoided) "Voided" else "Paid",
+                color = if (isVoided) StatusRed else StatusEmerald,
+                fontSize = 10.sp
             )
         }
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CurrencyText(installment.amountPaid, bold = true)
-                Text(" / ", style = MaterialTheme.typography.bodySmall)
-                CurrencyText(installment.amountDue, style = MaterialTheme.typography.bodySmall)
+        if (!payment.receiptId.isNullOrBlank()) {
+            TextButton(onClick = onReceipt) {
+                Text("Receipt", color = BrandBlue, fontWeight = FontWeight.SemiBold)
             }
-            GenericBadge(installment.status.name, statusColor)
         }
     }
 }
 
 @Composable
-private fun DetailSection(
-    title: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    ListItemCard(modifier = modifier) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+private fun BillingExclusionCard(excluded: Boolean, onToggle: (Boolean) -> Unit) {
+    DetailCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.width(18.dp).height(18.dp)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "Exclude from billing tracking",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
                 )
-                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    "This enrollment won't appear in pending reports",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OnSurfaceVariantLightColor
+                )
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            content()
+            Switch(
+                checked = excluded,
+                onCheckedChange = onToggle,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = BaseWhite,
+                    checkedTrackColor = BrandRed
+                )
+            )
         }
     }
 }
 
 @Composable
-private fun DetailInfoRow(label: String, value: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium
-        )
-        Text(value, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-@Composable
-private fun EnrollmentActionsSheet(
-    excludedFromBilling: Boolean,
-    isInstallment: Boolean,
-    isSubscription: Boolean,
-    canEditInstallments: Boolean,
-    canSubExtend: Boolean,
-    canExclude: Boolean,
+private fun EnrollmentActionBar(
     canMarkComplete: Boolean,
     canCancel: Boolean,
     onRecordPayment: () -> Unit,
-    onEditInstallments: () -> Unit,
-    onExtendSubscription: () -> Unit,
-    onToggleBillingExclusion: () -> Unit,
     onMarkComplete: () -> Unit,
     onCancel: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .background(BaseWhite)
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text(
-            "Actions",
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        EnrollmentActionItem(
-            label = "Record Payment",
-            icon = Icons.Outlined.Payments,
-            onClick = onRecordPayment
-        )
-        if (isInstallment && canEditInstallments) {
-            EnrollmentActionItem(
-                label = "Edit Installments",
-                icon = Icons.Outlined.Edit,
-                onClick = onEditInstallments
-            )
-        }
-        if (isSubscription && canSubExtend) {
-            EnrollmentActionItem(
-                label = "Extend Subscription",
-                icon = Icons.Outlined.EventRepeat,
-                onClick = onExtendSubscription
-            )
-        }
-        if (canExclude) {
-            EnrollmentActionItem(
-                label = if (excludedFromBilling) "Include in billing" else "Exclude from billing",
-                icon = Icons.Outlined.Block,
-                onClick = onToggleBillingExclusion
-            )
+        Button(
+            onClick = onRecordPayment,
+            modifier = Modifier.fillMaxWidth(),
+            shape = FieldShape,
+            colors = ButtonDefaults.buttonColors(containerColor = BrandRed, contentColor = BaseWhite)
+        ) {
+            Icon(Icons.Outlined.CreditCard, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(8.dp))
+            Text("Record Payment", fontWeight = FontWeight.Bold)
         }
         if (canMarkComplete) {
-            EnrollmentActionItem(
-                label = "Mark Complete",
-                icon = Icons.Outlined.CheckCircle,
-                onClick = onMarkComplete
-            )
+            OutlinedButton(
+                onClick = onMarkComplete,
+                modifier = Modifier.fillMaxWidth(),
+                shape = FieldShape,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = BrandBlueTint,
+                    contentColor = BrandBlue
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BrandBlue.copy(alpha = 0.35f))
+            ) {
+                Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("Mark Complete", fontWeight = FontWeight.SemiBold)
+            }
         }
         if (canCancel) {
-            EnrollmentActionItem(
-                label = "Cancel Enrollment",
-                icon = Icons.Outlined.Block,
-                destructive = true,
-                onClick = onCancel
-            )
+            OutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.fillMaxWidth(),
+                shape = FieldShape,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, BrandRed.copy(alpha = 0.6f))
+            ) {
+                Icon(Icons.Outlined.Cancel, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("Cancel Enrollment", fontWeight = FontWeight.SemiBold)
+            }
         }
     }
 }
 
 @Composable
-private fun EnrollmentActionItem(
-    label: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    destructive: Boolean = false
+private fun DetailCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    val color = if (destructive) StatusRed else MaterialTheme.colorScheme.primary
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = CardShape,
+        colors = CardDefaults.cardColors(containerColor = BaseWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = color)
-        Text(
-            label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (destructive) StatusRed else MaterialTheme.colorScheme.onSurface
-        )
+        Column(modifier = Modifier.padding(16.dp), content = content)
     }
 }

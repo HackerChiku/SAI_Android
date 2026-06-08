@@ -1,20 +1,15 @@
-package com.saicomputer.sms.feature.students
+package com.saicomputer.sms.feature.payments
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saicomputer.sms.core.network.ApiException
 import com.saicomputer.sms.core.result.UiState
-import com.saicomputer.sms.core.session.SessionManager
-import com.saicomputer.sms.data.dto.ChangeStudentStatusInput
-import com.saicomputer.sms.data.dto.ChangeStudentStatusResponse
-import com.saicomputer.sms.data.dto.StudentGetResponse
+import com.saicomputer.sms.data.dto.EditBillingMonthInput
 import com.saicomputer.sms.data.dto.VoidPaymentInput
-import com.saicomputer.sms.data.model.ManualStudentStatus
+import com.saicomputer.sms.data.model.PaymentListItem
 import com.saicomputer.sms.data.model.ReceiptDetail
-import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.data.repo.PaymentsRepository
 import com.saicomputer.sms.data.repo.ReceiptsRepository
-import com.saicomputer.sms.data.repo.StudentsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,53 +18,25 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class StudentDetailViewModel @Inject constructor(
-    private val repository: StudentsRepository,
+class PaymentsListViewModel @Inject constructor(
     private val paymentsRepository: PaymentsRepository,
-    private val receiptsRepository: ReceiptsRepository,
-    session: SessionManager
+    private val receiptsRepository: ReceiptsRepository
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<UiState<StudentGetResponse>>(UiState.Loading)
-    val state: StateFlow<UiState<StudentGetResponse>> = _state.asStateFlow()
+    private val _state = MutableStateFlow<UiState<List<PaymentListItem>>>(UiState.Loading)
+    val state: StateFlow<UiState<List<PaymentListItem>>> = _state.asStateFlow()
 
-    val currentUser: StateFlow<User?> = session.currentUser
+    init { load() }
 
-    private var studentId: String = ""
-
-    fun load(id: String) {
-        studentId = id
+    fun load() {
         _state.value = UiState.Loading
         viewModelScope.launch {
             try {
-                _state.value = UiState.Success(repository.get(id))
+                _state.value = UiState.Success(paymentsRepository.list())
             } catch (e: ApiException) {
-                _state.value = UiState.Error(e.friendlyMessage(), e.code)
+                _state.value = UiState.Error(e.friendlyMessage())
             } catch (e: Exception) {
-                _state.value = UiState.Error(e.message ?: "Failed to load")
-            }
-        }
-    }
-
-    fun reload() = load(studentId)
-
-    fun changeStatus(
-        newStatus: ManualStudentStatus,
-        reason: String?,
-        onResult: (ChangeStudentStatusResponse) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                val res = repository.changeStatus(
-                    ChangeStudentStatusInput(studentId, newStatus, reason)
-                )
-                onResult(res)
-                reload()
-            } catch (e: ApiException) {
-                onError(e.friendlyMessage())
-            } catch (e: Exception) {
-                onError(e.message ?: "Failed")
+                _state.value = UiState.Error(e.message ?: "Failed to load payments")
             }
         }
     }
@@ -84,11 +51,32 @@ class StudentDetailViewModel @Inject constructor(
             try {
                 paymentsRepository.void(VoidPaymentInput(paymentId, reason))
                 onSuccess()
-                reload()
+                load()
             } catch (e: ApiException) {
                 onError(e.friendlyMessage())
             } catch (e: Exception) {
                 onError(e.message ?: "Failed to void payment")
+            }
+        }
+    }
+
+    fun editBillingMonth(
+        paymentId: String,
+        newBillingMonth: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                paymentsRepository.editBillingMonth(
+                    EditBillingMonthInput(paymentId, newBillingMonth)
+                )
+                onSuccess()
+                load()
+            } catch (e: ApiException) {
+                onError(e.friendlyMessage())
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to update billing month")
             }
         }
     }

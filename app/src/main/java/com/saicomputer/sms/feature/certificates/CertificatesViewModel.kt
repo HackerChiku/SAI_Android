@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.saicomputer.sms.core.network.ApiException
 import com.saicomputer.sms.core.result.UiState
 import com.saicomputer.sms.data.dto.CertificateListFilters
+import com.saicomputer.sms.data.model.CertificateDetail
 import com.saicomputer.sms.data.model.CertificateListItem
 import com.saicomputer.sms.data.repo.CertificatesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +34,22 @@ class CertificatesViewModel @Inject constructor(
                 _state.value = UiState.Error(e.friendlyMessage())
             } catch (e: Exception) {
                 _state.value = UiState.Error(e.message ?: "Failed")
+            }
+        }
+    }
+
+    fun loadCertificate(
+        certificateId: String,
+        onSuccess: (CertificateDetail) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                onSuccess(repository.get(certificateId).certificate)
+            } catch (e: ApiException) {
+                onError(e.friendlyMessage())
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to load certificate")
             }
         }
     }

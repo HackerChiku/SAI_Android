@@ -4,28 +4,63 @@ import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.ui.SnackbarController
+import com.saicomputer.sms.core.ui.theme.BaseWhite
+import com.saicomputer.sms.core.ui.theme.BrandBlue
+import com.saicomputer.sms.core.ui.theme.BrandBlueTint
+import com.saicomputer.sms.core.ui.theme.OffWhite
+import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
 import com.saicomputer.sms.data.dto.ExportResponse
+import com.saicomputer.sms.data.model.User
+
+private val CardShape = RoundedCornerShape(14.dp)
+private val FieldShape = RoundedCornerShape(12.dp)
+private val IconShape = RoundedCornerShape(10.dp)
 
 @Composable
 fun ExportsScreen(
+    user: User? = null,
     snackbarController: SnackbarController,
     viewModel: ExportsViewModel = hiltViewModel()
 ) {
@@ -45,30 +80,204 @@ fun ExportsScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text("Export data as CSV", style = MaterialTheme.typography.titleMedium)
-        ExportButton("Export Students", busy == ExportKind.Students) {
-            viewModel.export(ExportKind.Students, { handle(it, "students.csv") }, { snackbarController.show(scope, it) })
-        }
-        ExportButton("Export Payments", busy == ExportKind.Payments) {
-            viewModel.export(ExportKind.Payments, { handle(it, "payments.csv") }, { snackbarController.show(scope, it) })
-        }
-        ExportButton("Export Enrollments", busy == ExportKind.Enrollments) {
-            viewModel.export(ExportKind.Enrollments, { handle(it, "enrollments.csv") }, { snackbarController.show(scope, it) })
+    Column(modifier = Modifier.fillMaxSize()) {
+        ExportsListHeader(user = user)
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(OffWhite)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ExportsInfoBanner()
+
+            ExportCard(
+                icon = Icons.Outlined.People,
+                title = "Export Students",
+                subtitle = "All student records with status and era",
+                buttonLabel = "Export Students",
+                loading = busy == ExportKind.Students,
+                enabled = busy == null,
+                onExport = {
+                    viewModel.export(
+                        ExportKind.Students,
+                        { handle(it, "students.csv") },
+                        { snackbarController.show(scope, it) }
+                    )
+                }
+            )
+
+            ExportCard(
+                icon = Icons.Outlined.CreditCard,
+                title = "Export Payments",
+                subtitle = "Complete payment history with receipts",
+                buttonLabel = "Export Payments",
+                loading = busy == ExportKind.Payments,
+                enabled = busy == null,
+                onExport = {
+                    viewModel.export(
+                        ExportKind.Payments,
+                        { handle(it, "payments.csv") },
+                        { snackbarController.show(scope, it) }
+                    )
+                }
+            )
+
+            ExportCard(
+                icon = Icons.AutoMirrored.Outlined.Assignment,
+                title = "Export Enrollments",
+                subtitle = "All enrollments with installment details",
+                buttonLabel = "Export Enrollments",
+                loading = busy == ExportKind.Enrollments,
+                enabled = busy == null,
+                onExport = {
+                    viewModel.export(
+                        ExportKind.Enrollments,
+                        { handle(it, "enrollments.csv") },
+                        { snackbarController.show(scope, it) }
+                    )
+                }
+            )
         }
     }
 }
 
 @Composable
-private fun ExportButton(label: String, loading: Boolean, onClick: () -> Unit) {
-    Button(onClick = onClick, enabled = !loading, modifier = Modifier.fillMaxWidth()) {
-        if (loading) CircularProgressIndicator(Modifier.padding(2.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-        else Text(label)
+private fun ExportsListHeader(user: User?) {
+    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BrandBlue)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Exports",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = BaseWhite
+        )
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(BrandBlue.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        }
+    }
+}
+
+@Composable
+private fun ExportsInfoBanner() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(FieldShape)
+            .background(BrandBlueTint)
+            .border(1.dp, BrandBlue.copy(alpha = 0.25f), FieldShape)
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(Icons.Outlined.Info, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(20.dp))
+        Text(
+            "Exports are generated as CSV files and ready for download instantly.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BrandBlue,
+            lineHeight = 18.sp
+        )
+    }
+}
+
+@Composable
+private fun ExportCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    buttonLabel: String,
+    loading: Boolean,
+    enabled: Boolean,
+    onExport: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = CardShape,
+        colors = CardDefaults.cardColors(containerColor = BaseWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(IconShape)
+                        .background(BrandBlueTint),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(icon, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(22.dp))
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnSurfaceVariantLightColor
+                    )
+                }
+            }
+
+            ExportActionButton(
+                label = buttonLabel,
+                loading = loading,
+                enabled = enabled,
+                onClick = onExport
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExportActionButton(
+    label: String,
+    loading: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(FieldShape)
+            .background(BrandBlueTint)
+            .border(1.dp, BrandBlue.copy(alpha = 0.35f), FieldShape)
+            .clickable(enabled = enabled && !loading, onClick = onClick)
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+                color = BrandBlue
+            )
+        } else {
+            Icon(Icons.Outlined.Download, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(6.dp))
+            Text(label, color = BrandBlue, fontWeight = FontWeight.SemiBold)
+        }
     }
 }
 
