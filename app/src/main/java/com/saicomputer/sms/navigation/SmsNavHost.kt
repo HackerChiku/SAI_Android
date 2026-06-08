@@ -26,6 +26,7 @@ import com.saicomputer.sms.feature.audit.AuditScreen
 import com.saicomputer.sms.feature.auth.ChangePasswordScreen
 import com.saicomputer.sms.feature.auth.LoginScreen
 import com.saicomputer.sms.feature.certificates.CertificatesListScreen
+import com.saicomputer.sms.feature.courses.CourseDetailScreen
 import com.saicomputer.sms.feature.courses.CourseFormScreen
 import com.saicomputer.sms.feature.courses.CoursesListScreen
 import com.saicomputer.sms.feature.dashboard.DashboardScreen
@@ -64,6 +65,14 @@ fun SmsNavHost(
         user.mustChangePassword -> Screen.ChangePassword.route
         user.role == UserRole.Receptionist -> Screen.Students.route
         else -> Screen.Dashboard.route
+    }
+
+    val logout: () -> Unit = {
+        appViewModel.logout {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
     }
 
     val motion = tween<Float>(280)
@@ -113,7 +122,7 @@ fun SmsNavHost(
         }
 
         composable(Screen.Dashboard.route) {
-            MainShell(navController, currentUser, Screen.Dashboard.route) {
+            MainShell(navController, currentUser, Screen.Dashboard.route, "Dashboard", logout) {
                 DashboardScreen(
                     onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) }
                 )
@@ -121,7 +130,7 @@ fun SmsNavHost(
         }
 
         composable(Screen.Students.route) {
-            MainShell(navController, currentUser, Screen.Students.route) {
+            MainShell(navController, currentUser, Screen.Students.route, "Students", logout) {
                 StudentsListScreen(
                     onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
                     onNewStudent = { navController.navigate(Screen.StudentNew.route) }
@@ -130,17 +139,11 @@ fun SmsNavHost(
         }
 
         composable(Screen.More.route) {
-            MainShell(navController, currentUser, Screen.More.route) {
-                MoreScreen(
-                    user = currentUser,
-                    onNavigate = { route -> navController.navigate(route) },
-                    onLogout = {
-                        appViewModel.logout {
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
-                    }
+            // Legacy route — redirect to students (drawer replaces More tab).
+            MainShell(navController, currentUser, Screen.Students.route, "Students", logout) {
+                StudentsListScreen(
+                    onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
+                    onNewStudent = { navController.navigate(Screen.StudentNew.route) }
                 )
             }
         }
@@ -187,7 +190,7 @@ fun SmsNavHost(
         }
 
         composable(Screen.Search.route) {
-            MainShell(navController, currentUser, Screen.Students.route) {
+            MainShell(navController, currentUser, Screen.Search.route, "Search", logout) {
                 StudentsListScreen(
                     onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
                     onNewStudent = { navController.navigate(Screen.StudentNew.route) }
@@ -197,13 +200,23 @@ fun SmsNavHost(
 
         // ---- Courses ----
         composable(Screen.Courses.route) {
-            MainShell(navController, currentUser, Screen.Courses.route) {
+            MainShell(navController, currentUser, Screen.Courses.route, "Courses", logout) {
                 CoursesListScreen(
-                    onBack = { navController.popBackStack() },
                     onNewCourse = { navController.navigate(Screen.CourseNew.route) },
-                    onEditCourse = { id -> navController.navigate(Screen.CourseEdit.create(id)) }
+                    onOpenCourse = { id -> navController.navigate(Screen.CourseDetail.create(id)) }
                 )
             }
+        }
+        composable(
+            Screen.CourseDetail.route,
+            arguments = listOf(navArgument(Screen.ARG_ID) { type = NavType.StringType })
+        ) { entry ->
+            val id = entry.arguments?.getString(Screen.ARG_ID).orEmpty()
+            CourseDetailScreen(
+                courseId = id,
+                onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(Screen.CourseEdit.create(id)) }
+            )
         }
         composable(Screen.CourseNew.route) {
             CourseFormScreen(
@@ -272,41 +285,56 @@ fun SmsNavHost(
 
         // ---- Subscriptions ----
         composable(Screen.Subscriptions.route) {
-            SubscriptionsListScreen(
-                onBack = { navController.popBackStack() },
-                onOpenEnrollment = { eid -> navController.navigate(Screen.EnrollmentDetail.create(eid)) }
-            )
+            MainShell(navController, currentUser, Screen.Subscriptions.route, "Subscriptions", logout) {
+                SubscriptionsListScreen(
+                    onOpenEnrollment = { eid -> navController.navigate(Screen.EnrollmentDetail.create(eid)) }
+                )
+            }
         }
 
         // ---- Receipts / Certificates ----
         composable(Screen.Receipts.route) {
-            ReceiptsListScreen(onBack = { navController.popBackStack() }, snackbarController = snackbarController)
+            MainShell(navController, currentUser, Screen.Receipts.route, "Receipts", logout) {
+                ReceiptsListScreen(snackbarController = snackbarController)
+            }
         }
         composable(Screen.Payments.route) {
-            ReceiptsListScreen(onBack = { navController.popBackStack() }, snackbarController = snackbarController)
+            MainShell(navController, currentUser, Screen.Receipts.route, "Receipts", logout) {
+                ReceiptsListScreen(snackbarController = snackbarController)
+            }
         }
         composable(Screen.Certificates.route) {
-            CertificatesListScreen(onBack = { navController.popBackStack() }, snackbarController = snackbarController)
+            MainShell(navController, currentUser, Screen.Certificates.route, "Certificates", logout) {
+                CertificatesListScreen(snackbarController = snackbarController)
+            }
         }
 
         // ---- Audit ----
         composable(Screen.Audit.route) {
-            AuditScreen(onBack = { navController.popBackStack() })
+            MainShell(navController, currentUser, Screen.Audit.route, "Audit Log", logout) {
+                AuditScreen()
+            }
         }
 
         // ---- Settings / Users / Exports ----
         composable(Screen.Settings.route) {
-            InstituteSettingsScreen(
+            MainShell(navController, currentUser, Screen.Settings.route, "Settings", logout) {
+                InstituteSettingsScreen(
+                    onOpenUsers = { navController.navigate(Screen.Users.route) },
+                    snackbarController = snackbarController
+                )
+            }
+        }
+        composable(Screen.Users.route) {
+            UserManagementScreen(
                 onBack = { navController.popBackStack() },
-                onOpenUsers = { navController.navigate(Screen.Users.route) },
                 snackbarController = snackbarController
             )
         }
-        composable(Screen.Users.route) {
-            UserManagementScreen(onBack = { navController.popBackStack() }, snackbarController = snackbarController)
-        }
         composable(Screen.Exports.route) {
-            ExportsScreen(onBack = { navController.popBackStack() }, snackbarController = snackbarController)
+            MainShell(navController, currentUser, Screen.Exports.route, "Exports", logout) {
+                ExportsScreen(snackbarController = snackbarController)
+            }
         }
     }
 }

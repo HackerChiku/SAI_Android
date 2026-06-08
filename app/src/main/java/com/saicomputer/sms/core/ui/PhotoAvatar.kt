@@ -1,7 +1,12 @@
 package com.saicomputer.sms.core.ui
 
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -11,6 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,12 +30,55 @@ fun PhotoAvatar(
     modifier: Modifier = Modifier,
     size: Int = 44
 ) {
-    val initials = remember(name) { initialsOf(name) }
+    InitialsAvatar(name = name, modifier = modifier, size = size)
+}
+
+/** Profile avatar that shows initials while loading or when no photo is available. */
+@Composable
+fun StudentPhotoAvatar(
+    name: String,
+    base64: String?,
+    loading: Boolean,
+    modifier: Modifier = Modifier,
+    size: Int = 88
+) {
+    val bitmap = rememberBase64ImageBitmap(base64)
+    val showPhoto = !loading && bitmap != null
+
     Box(
         modifier = modifier
             .size(size.dp)
             .clip(CircleShape)
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                shape = CircleShape
+            )
             .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center
+    ) {
+        if (showPhoto) {
+            Image(
+                bitmap = bitmap!!,
+                contentDescription = "Profile photo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            InitialsAvatar(name = name, size = size)
+        }
+    }
+}
+
+@Composable
+private fun InitialsAvatar(
+    name: String,
+    modifier: Modifier = Modifier,
+    size: Int
+) {
+    val initials = remember(name) { initialsOf(name) }
+    Box(
+        modifier = modifier.size(size.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -39,7 +90,17 @@ fun PhotoAvatar(
     }
 }
 
-private fun initialsOf(name: String): String {
+@Composable
+fun rememberBase64ImageBitmap(base64: String?): ImageBitmap? = remember(base64) {
+    base64?.let {
+        runCatching {
+            val bytes = Base64.decode(it, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+        }.getOrNull()
+    }
+}
+
+internal fun initialsOf(name: String): String {
     val parts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
     return when {
         parts.isEmpty() -> "?"

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saicomputer.sms.core.format.REGISTRATION_SESSION_LABELS
@@ -33,11 +34,16 @@ private val STUDENT_STATUS_COLORS: Map<StudentStatus, Color> = mapOf(
 )
 
 @Composable
-fun Pill(text: String, color: Color, modifier: Modifier = Modifier) {
+fun Pill(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit = 11.sp
+) {
     Text(
         text = text,
         color = color,
-        fontSize = 11.sp,
+        fontSize = fontSize,
         fontWeight = FontWeight.SemiBold,
         modifier = modifier
             .clip(RoundedCornerShape(50))
@@ -47,22 +53,32 @@ fun Pill(text: String, color: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun StatusBadge(status: StudentStatus, modifier: Modifier = Modifier) {
+fun StatusBadge(
+    status: StudentStatus,
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit = 11.sp
+) {
     val color = STUDENT_STATUS_COLORS[status] ?: StatusGray
-    Pill(text = STUDENT_STATUS_LABELS[status] ?: status.name, color = color, modifier = modifier)
+    Pill(
+        text = STUDENT_STATUS_LABELS[status] ?: status.name,
+        color = color,
+        modifier = modifier,
+        fontSize = fontSize
+    )
 }
 
 /** Hidden for NewRecord (no badge), per spec. */
 @Composable
 fun RegistrationSessionBadge(
     session: RegistrationSession,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit = 11.sp
 ) {
     when (session) {
         RegistrationSession.Before2017 ->
-            Pill(REGISTRATION_SESSION_LABELS.getValue(session), StatusPurple, modifier)
+            Pill(REGISTRATION_SESSION_LABELS.getValue(session), StatusPurple, modifier, fontSize)
         RegistrationSession.After2017 ->
-            Pill(REGISTRATION_SESSION_LABELS.getValue(session), StatusBlue, modifier)
+            Pill(REGISTRATION_SESSION_LABELS.getValue(session), StatusBlue, modifier, fontSize)
         RegistrationSession.NewRecord -> Unit
     }
 }

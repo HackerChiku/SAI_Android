@@ -137,10 +137,9 @@ private fun DashboardContent(
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Dashboard", style = MaterialTheme.typography.titleLarge)
                 var expanded by remember { mutableStateOf(false) }
                 Box {
                     TextButton(onClick = { expanded = true }) {

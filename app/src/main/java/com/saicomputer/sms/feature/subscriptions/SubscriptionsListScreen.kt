@@ -14,7 +14,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,21 +28,18 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.GenericBadge
 import com.saicomputer.sms.core.ui.LoadingSkeleton
-import com.saicomputer.sms.core.ui.SmsTopBar
 import com.saicomputer.sms.core.ui.theme.StatusAmber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubscriptionsListScreen(
-    onBack: () -> Unit,
     onOpenEnrollment: (String) -> Unit,
     viewModel: SubscriptionsListViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pendingOnly by viewModel.pendingOnly.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { SmsTopBar(title = "Subscriptions", onBack = onBack) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+    Column(Modifier.fillMaxSize()) {
             Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = pendingOnly,
@@ -80,6 +76,5 @@ fun SubscriptionsListScreen(
                     }
                 }
             }
-        }
     }
 }

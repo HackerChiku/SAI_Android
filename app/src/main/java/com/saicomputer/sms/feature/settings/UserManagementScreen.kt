@@ -12,14 +12,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,15 +35,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.result.UiState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.GenericBadge
+import com.saicomputer.sms.core.ui.ListItemCard
+import com.saicomputer.sms.core.ui.ListItemIconBox
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.SmsTopBar
 import com.saicomputer.sms.core.ui.SnackbarController
+import com.saicomputer.sms.core.ui.theme.BrandBlack
+import com.saicomputer.sms.core.ui.theme.BrandBlue
+import com.saicomputer.sms.core.ui.theme.BrandRed
 import com.saicomputer.sms.data.model.UserRole
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,21 +80,15 @@ fun UserManagementScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(s.data) { u ->
-                        Card(Modifier.fillMaxWidth()) {
-                            Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Column {
-                                    Text(u.fullName, fontWeight = FontWeight.SemiBold)
-                                    Text(u.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    GenericBadge(u.role.name)
-                                }
-                                TextButton(onClick = { resetUserId = u.userId }) {
-                                    Text("Reset Password")
-                                }
-                            }
-                        }
+                        UserRow(
+                            fullName = u.fullName,
+                            email = u.email,
+                            role = u.role,
+                            onResetPassword = { resetUserId = u.userId }
+                        )
                     }
                 }
             }
@@ -158,5 +160,55 @@ fun UserManagementScreen(
             },
             dismissButton = { TextButton(onClick = { resetUserId = null }) { Text("Cancel") } }
         )
+    }
+}
+
+
+@Composable
+private fun UserRow(
+    fullName: String,
+    email: String,
+    role: UserRole,
+    onResetPassword: () -> Unit
+) {
+    val roleColor = when (role) {
+        UserRole.Owner -> BrandBlue
+        UserRole.Admin -> BrandBlack
+        UserRole.Receptionist -> BrandRed
+    }
+
+    ListItemCard {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            ListItemIconBox(icon = Icons.Outlined.Person)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    fullName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    email,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                GenericBadge(role.name, roleColor)
+            }
+            OutlinedButton(onClick = onResetPassword) {
+                Text("Reset Password", fontSize = 12.sp)
+            }
+        }
     }
 }

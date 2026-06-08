@@ -19,6 +19,9 @@ sealed class Screen(val route: String) {
 
     data object Courses : Screen("courses")
     data object CourseNew : Screen("course_new")
+    data object CourseDetail : Screen("course/{id}") {
+        fun create(id: String) = "course/$id"
+    }
     data object CourseEdit : Screen("course/{id}/edit") {
         fun create(id: String) = "course/$id/edit"
     }

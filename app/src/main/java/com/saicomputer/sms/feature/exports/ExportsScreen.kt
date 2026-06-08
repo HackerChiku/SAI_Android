@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,13 +21,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.saicomputer.sms.core.ui.SmsTopBar
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.data.dto.ExportResponse
 
 @Composable
 fun ExportsScreen(
-    onBack: () -> Unit,
     snackbarController: SnackbarController,
     viewModel: ExportsViewModel = hiltViewModel()
 ) {
@@ -48,21 +45,21 @@ fun ExportsScreen(
         }
     }
 
-    Scaffold(topBar = { SmsTopBar(title = "Exports", onBack = onBack) }) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("Export data as CSV", style = MaterialTheme.typography.titleMedium)
-            ExportButton("Export Students", busy == ExportKind.Students) {
-                viewModel.export(ExportKind.Students, { handle(it, "students.csv") }, { snackbarController.show(scope, it) })
-            }
-            ExportButton("Export Payments", busy == ExportKind.Payments) {
-                viewModel.export(ExportKind.Payments, { handle(it, "payments.csv") }, { snackbarController.show(scope, it) })
-            }
-            ExportButton("Export Enrollments", busy == ExportKind.Enrollments) {
-                viewModel.export(ExportKind.Enrollments, { handle(it, "enrollments.csv") }, { snackbarController.show(scope, it) })
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Export data as CSV", style = MaterialTheme.typography.titleMedium)
+        ExportButton("Export Students", busy == ExportKind.Students) {
+            viewModel.export(ExportKind.Students, { handle(it, "students.csv") }, { snackbarController.show(scope, it) })
+        }
+        ExportButton("Export Payments", busy == ExportKind.Payments) {
+            viewModel.export(ExportKind.Payments, { handle(it, "payments.csv") }, { snackbarController.show(scope, it) })
+        }
+        ExportButton("Export Enrollments", busy == ExportKind.Enrollments) {
+            viewModel.export(ExportKind.Enrollments, { handle(it, "enrollments.csv") }, { snackbarController.show(scope, it) })
         }
     }
 }
