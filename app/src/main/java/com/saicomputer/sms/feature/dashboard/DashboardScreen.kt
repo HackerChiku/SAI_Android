@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,6 +55,7 @@ import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.PhotoAvatar
+import com.saicomputer.sms.core.ui.ProfileMenuButton
 import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
 import com.saicomputer.sms.core.ui.theme.BrandBlueTint
@@ -152,7 +154,6 @@ private fun DashboardHeader(
 ) {
     val periodLabel = PERIOD_LABELS[period] ?: "This Month"
     var expanded by remember { mutableStateOf(false) }
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
 
     Column(
         modifier = Modifier
@@ -205,15 +206,7 @@ private fun DashboardHeader(
                         }
                     }
                 }
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(BrandBlue.copy(alpha = 0.5f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
+                ProfileMenuButton(user = user)
             }
         }
     }
@@ -460,26 +453,26 @@ private fun PendingStudentRow(
     }
 }
 
-private val STAT_CARD_HEIGHT = 128.dp
+private val STAT_CARD_HEIGHT = 140.dp
 
 @Composable
 private fun StatCardView(card: StatCard, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (card.highlighted) BrandRedTint.copy(alpha = 0.35f) else BaseWhite
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(14.dp)
         ) {
             Box(
                 modifier = Modifier
+                    .align(Alignment.TopEnd)
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(card.iconBackground),
@@ -492,30 +485,51 @@ private fun StatCardView(card: StatCard, modifier: Modifier = Modifier) {
                     modifier = Modifier.size(20.dp)
                 )
             }
-            Text(
-                card.value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (card.highlighted) BrandRed else MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                card.title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (card.subtitle != null) {
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(end = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
-                    card.subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariantLightColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    card.value,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (card.highlighted) BrandRed else MaterialTheme.colorScheme.onSurface,
+                    softWrap = true,
+                    maxLines = 2,
+                    lineHeight = 24.sp
                 )
+                Text(
+                    card.title,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium,
+                    softWrap = true,
+                    maxLines = 2,
+                    lineHeight = 16.sp
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 28.dp)
+                ) {
+                    if (card.subtitle != null) {
+                        Text(
+                            card.subtitle,
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = OnSurfaceVariantLightColor,
+                            softWrap = true,
+                            maxLines = 2,
+                            lineHeight = 14.sp
+                        )
+                    }
+                }
             }
         }
     }

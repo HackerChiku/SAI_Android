@@ -50,6 +50,7 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.core.ui.ResendEmailDialog
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.emailStatusColor
@@ -68,6 +69,7 @@ private val CardShape = RoundedCornerShape(14.dp)
 @Composable
 fun ReceiptsListScreen(
     user: User? = null,
+    onBack: () -> Unit,
     snackbarController: SnackbarController,
     viewModel: ReceiptsViewModel = hiltViewModel()
 ) {
@@ -77,7 +79,7 @@ fun ReceiptsListScreen(
     var resendFor by remember { mutableStateOf<ReceiptListItem?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ReceiptsListHeader(user = user)
+        ReceiptsListHeader(user = user, onBack = onBack)
 
         Column(
             modifier = Modifier
@@ -148,33 +150,8 @@ fun ReceiptsListScreen(
 }
 
 @Composable
-private fun ReceiptsListHeader(user: User?) {
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "Receipts",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite
-        )
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(BrandBlue.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
-    }
+private fun ReceiptsListHeader(user: User?, onBack: () -> Unit) {
+    SubpageTitleBar(title = "Receipts", onBack = onBack, user = user)
 }
 
 @Composable

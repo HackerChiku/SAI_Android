@@ -12,13 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Assessment
-import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.History
@@ -37,9 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saicomputer.sms.core.permission.can
+import com.saicomputer.sms.core.ui.ProfileMenuButton
 import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandRed
 import com.saicomputer.sms.core.ui.theme.OffWhite
 import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
 import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
@@ -55,12 +52,10 @@ private data class MoreItem(
 @Composable
 fun MoreScreen(
     user: User?,
-    onNavigate: (String) -> Unit,
-    onLogout: () -> Unit
+    onNavigate: (String) -> Unit
 ) {
     val menuItems = listOf(
         MoreItem(Screen.Courses.route, "Courses", Icons.AutoMirrored.Outlined.MenuBook, "courses.list"),
-        MoreItem(Screen.Subscriptions.route, "Subscriptions", Icons.Outlined.Autorenew, "subscriptions.list"),
         MoreItem(Screen.Receipts.route, "Receipts", Icons.AutoMirrored.Outlined.ReceiptLong, "receipts.list"),
         MoreItem(Screen.Certificates.route, "Certificates", Icons.Outlined.WorkspacePremium, "certificates.list"),
         MoreItem(Screen.Audit.route, "Audit Log", Icons.Outlined.History, "audit.list"),
@@ -96,24 +91,12 @@ fun MoreScreen(
                     HorizontalDivider(color = OutlineVariantLight)
                 }
             }
-            item {
-                MoreMenuRow(
-                    label = "Sign out",
-                    icon = Icons.AutoMirrored.Outlined.Logout,
-                    labelColor = BrandRed,
-                    iconTint = BrandRed,
-                    showChevron = false,
-                    onClick = onLogout
-                )
-            }
         }
     }
 }
 
 @Composable
 private fun MoreHeader(user: User?) {
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -131,15 +114,7 @@ private fun MoreHeader(user: User?) {
                 fontWeight = FontWeight.Bold,
                 color = BaseWhite
             )
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(BrandBlue.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
+            ProfileMenuButton(user = user, size = 40.dp)
         }
         Text(
             "Sai Computer Education",

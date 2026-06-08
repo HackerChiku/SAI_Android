@@ -51,6 +51,7 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.ProfileMenuButton
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
@@ -187,8 +188,6 @@ fun PaymentsListScreen(
 
 @Composable
 private fun PaymentsListHeader(user: User?) {
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -203,15 +202,7 @@ private fun PaymentsListHeader(user: User?) {
             fontWeight = FontWeight.Bold,
             color = BaseWhite
         )
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(BrandBlue.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
+        ProfileMenuButton(user = user)
     }
 }
 

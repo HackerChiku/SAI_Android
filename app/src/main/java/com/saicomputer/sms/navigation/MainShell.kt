@@ -42,24 +42,15 @@ private data class BottomNavItem(
     val icon: ImageVector
 )
 
-private val TAB_ROUTE_PREFIXES = listOf(
-    Screen.Dashboard.route,
-    Screen.Students.route,
-    "enrollment_new",
-    Screen.Receipts.route,
-    Screen.Payments.route,
-    Screen.More.route
-)
-
 @Composable
 fun MainShell(
     navController: NavHostController,
     user: User?,
     currentRoute: String,
+    showBottomBar: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val items = buildBottomNavItems(user)
-    val showBottomNav = isTabRoute(currentRoute)
 
     fun navigateTab(route: String) {
         if (!isRouteSelected(currentRoute, route)) {
@@ -75,7 +66,7 @@ fun MainShell(
 
     Scaffold(
         bottomBar = {
-            if (showBottomNav && items.isNotEmpty()) {
+            if (showBottomBar && items.isNotEmpty()) {
                 BottomNavBar(
                     items = items,
                     currentRoute = currentRoute,
@@ -168,23 +159,64 @@ private fun HorizontalDividerCompat() {
     )
 }
 
-private fun isTabRoute(route: String): Boolean {
-    if (route.startsWith("enrollment_new")) {
-        val studentId = route.substringAfter("studentId=", "").substringBefore("&")
-        return studentId.isBlank()
-    }
-    return TAB_ROUTE_PREFIXES.any { route == it || route.startsWith("$it?") }
+fun shouldShowBottomBar(route: String?, user: User?): Boolean {
+    if (user == null || route.isNullOrBlank()) return false
+    return route != Screen.Login.route && route != Screen.ChangePassword.route
 }
 
 private fun isRouteSelected(currentRoute: String, itemRoute: String): Boolean {
-    if (itemRoute == Screen.Payments.route) {
-        return currentRoute == Screen.Payments.route
+    return when (itemRoute) {
+        Screen.Dashboard.route -> currentRoute == Screen.Dashboard.route
+
+        Screen.Students.route -> currentRoute == Screen.Students.route ||
+            currentRoute == Screen.StudentNew.route ||
+            currentRoute == Screen.StudentDetail.route ||
+            currentRoute == Screen.StudentEdit.route ||
+            currentRoute == Screen.Search.route ||
+            currentRoute.startsWith("student/") ||
+            isStudentEnrollmentRoute(currentRoute)
+
+        Screen.Enrollments.route -> isEnrollTabRoute(currentRoute)
+
+        Screen.Payments.route -> currentRoute == Screen.Payments.route ||
+            currentRoute == Screen.PaymentNew.route ||
+            currentRoute.startsWith("payment_new")
+
+        Screen.More.route -> isMoreTabRoute(currentRoute)
+
+        else -> currentRoute == itemRoute || currentRoute.startsWith("$itemRoute?")
     }
-    if (itemRoute.startsWith("enrollment_new")) {
-        return currentRoute.startsWith("enrollment_new") &&
-            currentRoute.substringAfter("studentId=", "").substringBefore("&").isBlank()
-    }
-    return currentRoute == itemRoute || currentRoute.startsWith("$itemRoute?")
+}
+
+private fun isStudentEnrollmentRoute(route: String): Boolean {
+    if (route != Screen.EnrollmentNew.route && !route.startsWith("enrollment_new")) return false
+    val studentId = route.substringAfter("studentId=", "").substringBefore("&")
+    return studentId.isNotBlank()
+}
+
+private fun isEnrollTabRoute(route: String): Boolean {
+    if (route == Screen.Enrollments.route) return true
+    if (route == Screen.EnrollmentDetail.route || route.startsWith("enrollment/")) return true
+    if (route != Screen.EnrollmentNew.route && !route.startsWith("enrollment_new")) return false
+    val studentId = route.substringAfter("studentId=", "").substringBefore("&")
+    return studentId.isBlank()
+}
+
+private fun isMoreTabRoute(route: String): Boolean {
+    if (route == Screen.More.route) return true
+    return route == Screen.Courses.route ||
+        route == Screen.CourseNew.route ||
+        route == Screen.CourseDetail.route ||
+        route == Screen.CourseEdit.route ||
+        route.startsWith("course") ||
+        route == Screen.Subscriptions.route ||
+        route == Screen.Receipts.route ||
+        route == Screen.Certificates.route ||
+        route == Screen.Audit.route ||
+        route == Screen.Settings.route ||
+        route == Screen.Users.route ||
+        route == Screen.Exports.route ||
+        route == Screen.Profile.route
 }
 
 private fun buildBottomNavItems(user: User?): List<BottomNavItem> {
@@ -196,7 +228,7 @@ private fun buildBottomNavItems(user: User?): List<BottomNavItem> {
         add(BottomNavItem(Screen.Students.route, "Students", Icons.Outlined.People))
         add(
             BottomNavItem(
-                route = Screen.EnrollmentNew.create(),
+                route = Screen.Enrollments.route,
                 label = "Enroll",
                 icon = Icons.AutoMirrored.Outlined.Assignment
             )

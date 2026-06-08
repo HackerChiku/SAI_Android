@@ -49,6 +49,7 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.core.ui.ResendEmailDialog
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.emailStatusColor
@@ -66,6 +67,7 @@ private val CardShape = RoundedCornerShape(14.dp)
 @Composable
 fun CertificatesListScreen(
     user: User? = null,
+    onBack: () -> Unit,
     snackbarController: SnackbarController,
     viewModel: CertificatesViewModel = hiltViewModel()
 ) {
@@ -75,7 +77,7 @@ fun CertificatesListScreen(
     var resendFor by remember { mutableStateOf<CertificateListItem?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        CertificatesListHeader(user = user)
+        CertificatesListHeader(user = user, onBack = onBack)
 
         Column(
             modifier = Modifier
@@ -146,33 +148,8 @@ fun CertificatesListScreen(
 }
 
 @Composable
-private fun CertificatesListHeader(user: User?) {
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "Certificates",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite
-        )
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(BrandBlue.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
-    }
+private fun CertificatesListHeader(user: User?, onBack: () -> Unit) {
+    SubpageTitleBar(title = "Certificates", onBack = onBack, user = user)
 }
 
 @Composable

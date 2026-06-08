@@ -58,6 +58,7 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
 import com.saicomputer.sms.core.ui.theme.OffWhite
@@ -77,6 +78,7 @@ private val FieldShape = RoundedCornerShape(12.dp)
 @Composable
 fun AuditScreen(
     user: User? = null,
+    onBack: () -> Unit,
     viewModel: AuditViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -93,7 +95,7 @@ fun AuditScreen(
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-        AuditListHeader(user = user)
+        AuditListHeader(user = user, onBack = onBack)
 
         Column(
             modifier = Modifier
@@ -168,33 +170,8 @@ fun AuditScreen(
 }
 
 @Composable
-private fun AuditListHeader(user: User?) {
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "Audit Log",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite
-        )
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(BrandBlue.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
-    }
+private fun AuditListHeader(user: User?, onBack: () -> Unit) {
+    SubpageTitleBar(title = "Audit Log", onBack = onBack, user = user)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

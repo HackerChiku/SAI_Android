@@ -46,6 +46,7 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
 import com.saicomputer.sms.core.ui.theme.BrandBlueTint
@@ -68,6 +69,7 @@ private val FieldShape = RoundedCornerShape(12.dp)
 @Composable
 fun CoursesListScreen(
     user: User? = null,
+    onBack: () -> Unit,
     onNewCourse: () -> Unit,
     onOpenCourse: (String) -> Unit,
     viewModel: CoursesListViewModel = hiltViewModel()
@@ -79,6 +81,7 @@ fun CoursesListScreen(
         CoursesListHeader(
             user = user,
             canCreate = canCreate,
+            onBack = onBack,
             onNewCourse = onNewCourse
         )
 
@@ -135,28 +138,14 @@ fun CoursesListScreen(
 private fun CoursesListHeader(
     user: User?,
     canCreate: Boolean,
+    onBack: () -> Unit,
     onNewCourse: () -> Unit
 ) {
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "Courses",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    SubpageTitleBar(
+        title = "Courses",
+        onBack = onBack,
+        user = user,
+        actions = {
             if (canCreate) {
                 Box(
                     modifier = Modifier
@@ -174,17 +163,8 @@ private fun CoursesListHeader(
                     )
                 }
             }
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(BrandBlue.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            }
         }
-    }
+    )
 }
 
 @Composable

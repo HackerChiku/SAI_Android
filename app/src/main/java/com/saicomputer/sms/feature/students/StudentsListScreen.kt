@@ -20,8 +20,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.UnfoldMore
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +38,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,8 +65,10 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.ProfileMenuButton
 import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
+import com.saicomputer.sms.core.ui.theme.BrandBlueTint
 import com.saicomputer.sms.core.ui.theme.BrandRed
 import com.saicomputer.sms.core.ui.theme.OffWhite
 import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
@@ -129,6 +136,8 @@ fun StudentsListScreen(
     val filters by viewModel.filters.collectAsStateWithLifecycle()
     val students = viewModel.students.collectAsLazyPagingItems()
     val searchFocus = remember { FocusRequester() }
+    var showFilterDialog by remember { mutableStateOf(false) }
+    val hasActiveFilters = filters.status != "All" || filters.registrationSession != "All"
 
     Column(modifier = Modifier.fillMaxSize()) {
         StudentsListHeader(
@@ -144,45 +153,67 @@ fun StudentsListScreen(
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = filters.search,
-                onValueChange = viewModel::onSearchChange,
-                placeholder = { Text("Search by name, phone, or ID") },
-                singleLine = true,
-                shape = FieldShape,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = BaseWhite,
-                    unfocusedContainerColor = BaseWhite,
-                    focusedBorderColor = OutlineLight,
-                    unfocusedBorderColor = OutlineVariantLight
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions.Default,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(searchFocus)
-            )
-
-            Spacer(Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                FilterDropdown(
-                    displayLabel = STATUS_LABELS[filters.status] ?: "All Status",
-                    options = STATUS_OPTIONS,
-                    optionLabels = STATUS_LABELS,
-                    selected = filters.status,
-                    onSelected = viewModel::onStatusChange,
-                    modifier = Modifier.weight(1f)
+                OutlinedTextField(
+                    value = filters.search,
+                    onValueChange = viewModel::onSearchChange,
+                    placeholder = { Text("Search by name, phone, or ID") },
+                    singleLine = true,
+                    shape = FieldShape,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = BaseWhite,
+                        unfocusedContainerColor = BaseWhite,
+                        focusedBorderColor = OutlineLight,
+                        unfocusedBorderColor = OutlineVariantLight
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions.Default,
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(searchFocus)
                 )
-                FilterDropdown(
-                    displayLabel = SESSION_LABELS[filters.registrationSession] ?: "All Registration",
-                    options = SESSION_OPTIONS,
-                    optionLabels = SESSION_LABELS,
-                    selected = filters.registrationSession,
-                    onSelected = viewModel::onSessionChange,
-                    modifier = Modifier.weight(1f)
+                Box {
+                    IconButton(
+                        onClick = { showFilterDialog = true },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(FieldShape)
+                            .background(if (hasActiveFilters) BrandBlueTint else BaseWhite)
+                    ) {
+                        Icon(
+                            Icons.Outlined.FilterList,
+                            contentDescription = "Filters",
+                            tint = if (hasActiveFilters) BrandBlue else OnSurfaceVariantLightColor
+                        )
+                    }
+                    if (hasActiveFilters) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(10.dp)
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(BrandRed)
+                        )
+                    }
+                }
+            }
+
+            if (showFilterDialog) {
+                StudentsFilterDialog(
+                    status = filters.status,
+                    registrationSession = filters.registrationSession,
+                    onStatusChange = viewModel::onStatusChange,
+                    onSessionChange = viewModel::onSessionChange,
+                    onClear = {
+                        viewModel.onStatusChange("All")
+                        viewModel.onSessionChange("All")
+                    },
+                    onDismiss = { showFilterDialog = false }
                 )
             }
 
@@ -258,8 +289,6 @@ private fun StudentsListHeader(
     onSearchClick: () -> Unit,
     onNewStudent: () -> Unit
 ) {
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,14 +330,73 @@ private fun StudentsListHeader(
                     modifier = Modifier.size(22.dp)
                 )
             }
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(BrandBlue.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center
+            ProfileMenuButton(user = user)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StudentsFilterDialog(
+    status: String,
+    registrationSession: String,
+    onStatusChange: (String) -> Unit,
+    onSessionChange: (String) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = BaseWhite)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(
+                    "Filters",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                FilterDropdown(
+                    displayLabel = STATUS_LABELS[status] ?: "All Status",
+                    options = STATUS_OPTIONS,
+                    optionLabels = STATUS_LABELS,
+                    selected = status,
+                    onSelected = onStatusChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                FilterDropdown(
+                    displayLabel = SESSION_LABELS[registrationSession] ?: "All Registration",
+                    options = SESSION_OPTIONS,
+                    optionLabels = SESSION_LABELS,
+                    selected = registrationSession,
+                    onSelected = onSessionChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    TextButton(
+                        onClick = onClear,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Clear", color = BrandBlue)
+                    }
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = FieldShape,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = BrandRed,
+                            contentColor = BaseWhite
+                        )
+                    ) {
+                        Text("Apply", fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
         }
     }

@@ -1,41 +1,80 @@
 package com.saicomputer.sms.feature.auth
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.saicomputer.sms.core.ui.theme.BaseWhite
+import com.saicomputer.sms.core.ui.theme.BrandBlue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun ChangePasswordScreen(
     onChanged: () -> Unit,
+    forced: Boolean = true,
+    onBack: (() -> Unit)? = null,
     viewModel: ChangePasswordViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Change your password", style = MaterialTheme.typography.titleLarge)
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (!forced && onBack != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(BrandBlue)
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = BaseWhite)
+                }
+                Text(
+                    "Change Password",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = BaseWhite
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+        if (forced) {
+            Text("Change your password", style = MaterialTheme.typography.titleLarge)
+        }
         Text(
-            "You must set a new password before continuing.",
+            if (forced) {
+                "You must set a new password before continuing."
+            } else {
+                "Enter your current password and choose a new one."
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -95,6 +134,7 @@ fun ChangePasswordScreen(
             } else {
                 Text("Update password")
             }
+        }
         }
     }
 }

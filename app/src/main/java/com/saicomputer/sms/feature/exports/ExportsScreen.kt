@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.theme.BaseWhite
 import com.saicomputer.sms.core.ui.theme.BrandBlue
@@ -61,6 +62,7 @@ private val IconShape = RoundedCornerShape(10.dp)
 @Composable
 fun ExportsScreen(
     user: User? = null,
+    onBack: () -> Unit,
     snackbarController: SnackbarController,
     viewModel: ExportsViewModel = hiltViewModel()
 ) {
@@ -81,7 +83,7 @@ fun ExportsScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ExportsListHeader(user = user)
+        ExportsListHeader(user = user, onBack = onBack)
 
         Column(
             modifier = Modifier
@@ -145,33 +147,8 @@ fun ExportsScreen(
 }
 
 @Composable
-private fun ExportsListHeader(user: User?) {
-    val initial = user?.fullName?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "?"
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "Exports",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite
-        )
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(BrandBlue.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(initial, color = BaseWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        }
-    }
+private fun ExportsListHeader(user: User?, onBack: () -> Unit) {
+    SubpageTitleBar(title = "Exports", onBack = onBack, user = user)
 }
 
 @Composable

@@ -4,6 +4,7 @@ package com.saicomputer.sms.navigation
 sealed class Screen(val route: String) {
     data object Login : Screen("login")
     data object ChangePassword : Screen("change_password")
+    data object Profile : Screen("profile")
     data object Dashboard : Screen("dashboard")
 
     data object Students : Screen("students")
@@ -26,6 +27,7 @@ sealed class Screen(val route: String) {
         fun create(id: String) = "course/$id/edit"
     }
 
+    data object Enrollments : Screen("enrollments")
     data object EnrollmentNew : Screen("enrollment_new?studentId={studentId}") {
         fun create(studentId: String? = null) =
             if (studentId != null) "enrollment_new?studentId=$studentId" else "enrollment_new?studentId="
