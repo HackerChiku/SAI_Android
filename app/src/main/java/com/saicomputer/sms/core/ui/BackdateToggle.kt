@@ -1,5 +1,6 @@
 package com.saicomputer.sms.core.ui
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.saicomputer.sms.core.ui.theme.StatusAmber
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 /**
  * Owner-only backdate control with amber styling. When [enabled], shows a
@@ -37,16 +38,16 @@ fun BackdateToggle(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .border(1.dp, StatusAmber.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
-            .background(StatusAmber.copy(alpha = 0.06f), RoundedCornerShape(12.dp))
-            .padding(12.dp)
+            .border(appDimens().strokeHairline, appColors().warning.copy(alpha = 0.6f), appDimens().fieldShape)
+            .background(appColors().warning.copy(alpha = 0.06f), appDimens().fieldShape)
+            .padding(appDimens().spacingMd)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Backdate this entry", fontWeight = FontWeight.SemiBold, color = StatusAmber)
+                Text("Backdate this entry", fontWeight = FontWeight.SemiBold, color = appColors().warning)
                 Text(
                     explanation,
                     style = MaterialTheme.typography.labelSmall,
@@ -56,7 +57,7 @@ fun BackdateToggle(
             Switch(checked = enabled, onCheckedChange = onEnabledChange)
         }
         if (enabled) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(appDimens().spacingSm))
             DatePickerField(
                 value = date,
                 onValueChange = onDateChange,

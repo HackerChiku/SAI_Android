@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +15,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,11 +23,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.saicomputer.sms.core.ui.SmsTopBar
+import com.saicomputer.sms.core.ui.FormLoadingSkeleton
 import com.saicomputer.sms.core.ui.SnackbarController
+import com.saicomputer.sms.core.ui.SubpageTitleBar
+import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun InstituteSettingsScreen(
+    user: User? = null,
     onBack: () -> Unit,
     onOpenUsers: () -> Unit,
     snackbarController: SnackbarController,
@@ -36,16 +40,25 @@ fun InstituteSettingsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
-    Scaffold(topBar = { SmsTopBar(title = "Settings", onBack = onBack) }) { padding ->
+    Column(modifier = Modifier.fillMaxSize()) {
+        SubpageTitleBar(title = "Settings", onBack = onBack, user = user)
+
         if (state.loading) {
-            Column(Modifier.fillMaxSize().padding(padding), verticalArrangement = Arrangement.Center) {
-                CircularProgressIndicator(Modifier.padding(16.dp))
-            }
-            return@Scaffold
+            FormLoadingSkeleton(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            )
+            return@Column
         }
+
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(appDimens().spacingLg)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             state.rows.forEach { row ->
                 OutlinedTextField(
@@ -65,13 +78,20 @@ fun InstituteSettingsScreen(
                 enabled = !state.submitting,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (state.submitting) CircularProgressIndicator(Modifier.height(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                else Text("Save Settings")
+                if (state.submitting) {
+                    CircularProgressIndicator(
+                        Modifier.height(appDimens().iconSizeMd),
+                        strokeWidth = appDimens().spacingXxs,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Save Settings")
+                }
             }
             OutlinedButton(onClick = onOpenUsers, modifier = Modifier.fillMaxWidth()) {
                 Text("Manage Users")
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(appDimens().spacingSm))
         }
     }
 }

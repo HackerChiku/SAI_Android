@@ -76,10 +76,14 @@ data class Enrollment(
     val course: EnrollmentCourseRef? = null,
     val installments: List<Installment>? = null,
     val topics: List<EnrollmentTopic>? = null,
-    val topicsSummary: TopicsSummary? = null
+    val topicsSummary: TopicsSummary? = null,
+    /** Flat join fields returned on some list endpoints. */
+    @SerialName("StudentName") val studentNameField: String? = null,
+    @SerialName("CourseName") val courseNameField: String? = null,
+    @SerialName("CourseFullName") val courseFullNameField: String? = null
 ) {
-    /** Convenience accessors derived from the joined course/student objects. */
-    val courseName: String? get() = course?.courseName
-    val courseFullName: String? get() = course?.courseFullName
-    val studentName: String? get() = student?.fullName
+    /** Convenience accessors from nested joins or flat list fields. */
+    val courseName: String? get() = course?.courseName ?: courseNameField
+    val courseFullName: String? get() = course?.courseFullName ?: courseFullNameField
+    val studentName: String? get() = student?.fullName ?: studentNameField
 }

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.EnrollmentStatus
 import com.saicomputer.sms.data.model.ManualStudentStatus
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 enum class StatusDialogMode { Dropout, NotTakenAdmission, Reactivate }
 
@@ -61,13 +62,13 @@ fun ChangeStudentStatusDialog(
             Column {
                 Text(body, style = MaterialTheme.typography.bodyMedium)
                 if (mode == StatusDialogMode.Dropout && ongoing.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(appDimens().spacingSm))
                     ongoing.forEach { e ->
                         Text("• ${e.courseName ?: e.courseId}", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 if (mode != StatusDialogMode.Reactivate) {
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(appDimens().spacingMd))
                     OutlinedTextField(
                         value = reason,
                         onValueChange = { reason = it },

@@ -1,13 +1,8 @@
 package com.saicomputer.sms.core.ui.theme
 
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
-import androidx.compose.ui.unit.dp
 
-val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(6.dp),
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(14.dp),
-    large = RoundedCornerShape(20.dp),
-    extraLarge = RoundedCornerShape(28.dp)
-)
+/** @deprecated Use [appDimens]().toMaterialShapes() via MaterialTheme.shapes instead. */
+@Deprecated("Use MaterialTheme.shapes from SaiSmsTheme")
+val AppShapes: Shapes
+    get() = error("AppShapes is provided by SaiSmsTheme; use MaterialTheme.shapes in composables")

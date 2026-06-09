@@ -6,8 +6,18 @@ import com.saicomputer.sms.data.dto.InstallmentPaymentCreateInput
 import com.saicomputer.sms.data.dto.OkResponse
 import com.saicomputer.sms.data.dto.PaymentCreateInput
 import com.saicomputer.sms.data.dto.PaymentCreateResponse
+import com.saicomputer.sms.data.dto.PaymentListFilters
+import com.saicomputer.sms.data.dto.ReceiptListFilters
+import com.saicomputer.sms.data.dto.ReceiptListResponse
 import com.saicomputer.sms.data.dto.SubscriptionPaymentCreateInput
 import com.saicomputer.sms.data.dto.VoidPaymentInput
+import com.saicomputer.sms.data.model.Payment
+import com.saicomputer.sms.data.model.PaymentListItem
+import com.saicomputer.sms.data.model.RegistrationSession
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,4 +34,36 @@ class PaymentsRepository @Inject constructor(
 
     suspend fun editBillingMonth(input: EditBillingMonthInput): OkResponse =
         api.call("payments.editBillingMonth", input)
+
+    suspend fun list(filters: PaymentListFilters = PaymentListFilters()): List<PaymentListItem> {
+        val data = api.callRaw(
+            "payments.list",
+            api.json.encodeToJsonElement(filters)
+        ).jsonObject
+        val rows = data["rows"]?.jsonArray ?: return emptyList()
+        val receiptByPayment = runCatching {
+            api.call<ReceiptListResponse, ReceiptListFilters>(
+                "receipts.list",
+                ReceiptListFilters(pageSize = 500)
+            ).receipts.associateBy { it.paymentId }
+        }.getOrDefault(emptyMap())
+
+        return rows.map { elem ->
+            val obj = elem.jsonObject
+            val payment: Payment = api.json.decodeFromJsonElement(elem)
+            val studentName = obj["StudentName"]?.let { api.json.decodeFromJsonElement<String>(it) }
+                ?: receiptByPayment[payment.paymentId]?.studentName
+                ?: ""
+            val courseName = obj["CourseName"]?.let { api.json.decodeFromJsonElement<String>(it) }.orEmpty()
+            val session = obj["RegistrationSession"]?.let {
+                runCatching { api.json.decodeFromJsonElement<RegistrationSession>(it) }.getOrNull()
+            }
+            PaymentListItem(
+                payment = payment,
+                studentName = studentName.ifBlank { "Unknown student" },
+                courseName = courseName,
+                registrationSession = session
+            )
+        }
+    }
 }

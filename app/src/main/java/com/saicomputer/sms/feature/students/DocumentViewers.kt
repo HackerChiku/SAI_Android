@@ -1,7 +1,6 @@
 package com.saicomputer.sms.feature.students
 
-import android.graphics.BitmapFactory
-import android.util.Base64
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -14,31 +13,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
-import com.saicomputer.sms.core.ui.theme.StatusAmber
-
-@Composable
-private fun base64ToImage(base64: String?) = remember(base64) {
-    base64?.let {
-        runCatching {
-            val bytes = Base64.decode(it, Base64.DEFAULT)
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
-        }.getOrNull()
-    }
-}
+import com.saicomputer.sms.core.ui.ThemedShimmerBox
+import com.saicomputer.sms.core.ui.rememberBase64ImageBitmap
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun PhotoViewerDialog(
@@ -66,15 +54,20 @@ fun PhotoViewerDialog(
     }
 
     AlertDialog(
-        onDismissRequest = { viewModel.clearPhoto(); onDismiss() },
+        onDismissRequest = onDismiss,
         title = { Text("Student Photo") },
         text = {
-            Box(modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxWidth().heightIn(min = appDimens().chartHeightPie), contentAlignment = Alignment.Center) {
                 when {
-                    photo.loading -> CircularProgressIndicator()
+                    photo.loading -> ThemedShimmerBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(appDimens().chartHeightPie),
+                        shape = appDimens().cardShape
+                    )
                     photo.error != null -> Text(photo.error!!, color = MaterialTheme.colorScheme.error)
                     else -> {
-                        val img = base64ToImage(photo.file?.base64)
+                        val img = rememberBase64ImageBitmap(photo.file?.base64)
                         if (img != null) {
                             Image(bitmap = img, contentDescription = "Student photo", modifier = Modifier.fillMaxWidth())
                         } else {
@@ -92,7 +85,7 @@ fun PhotoViewerDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = { viewModel.clearPhoto(); onDismiss() }) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text("Close") }
         }
     )
 }
@@ -132,13 +125,18 @@ fun AadhaarViewerDialog(
                     Formatters.maskAadhaar(maskedNumber).ifBlank { "Aadhaar number not set" },
                     style = MaterialTheme.typography.titleMedium
                 )
-                Spacer(Modifier.height(8.dp))
-                Box(modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp), contentAlignment = Alignment.Center) {
+                Spacer(Modifier.height(appDimens().spacingSm))
+                Box(modifier = Modifier.fillMaxWidth().heightIn(min = appDimens().chartHeightPie), contentAlignment = Alignment.Center) {
                     when {
-                        aadhaar.loading -> CircularProgressIndicator()
+                        aadhaar.loading -> ThemedShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(appDimens().chartHeightPie),
+                            shape = appDimens().cardShape
+                        )
                         aadhaar.error != null -> Text(aadhaar.error!!, color = MaterialTheme.colorScheme.error)
                         else -> {
-                            val img = base64ToImage(aadhaar.file?.base64)
+                            val img = rememberBase64ImageBitmap(aadhaar.file?.base64)
                             if (img != null) {
                                 Image(bitmap = img, contentDescription = "Aadhaar", modifier = Modifier.fillMaxWidth())
                             } else {
@@ -147,11 +145,11 @@ fun AadhaarViewerDialog(
                         }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(appDimens().spacingSm))
                 Text(
                     "This view has been logged for audit purposes.",
                     style = MaterialTheme.typography.labelSmall,
-                    color = StatusAmber
+                    color = appColors().warning
                 )
             }
         },

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun TopicsProgressBar(
@@ -39,14 +40,14 @@ fun TopicsProgressBar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(appDimens().spacingXs))
         }
         LinearProgressIndicator(
             progress = { fraction },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(50))
+                .height(appDimens().spacingSm)
+                .clip(appDimens().pillShape)
         )
     }
 }

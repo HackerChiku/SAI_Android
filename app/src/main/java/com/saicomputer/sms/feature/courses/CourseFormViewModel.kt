@@ -38,7 +38,7 @@ data class CourseFormState(
     val courseFullName: String = "",
     val description: String = "",
     val courseLink: String = "",
-    val durationMonths: Int = 3,
+    val durationMonths: Int = 12,
     val fee: Int = 0,
     val enrollmentFee: Int = 0,
     val maxInstallments: Int = 12,
@@ -143,6 +143,15 @@ class CourseFormViewModel @Inject constructor(
     }
 
     fun update(transform: (CourseFormState) -> CourseFormState) = _state.update(transform)
+
+    fun setHasTopics(enabled: Boolean) = _state.update { st ->
+        val topics = when {
+            !enabled -> emptyList()
+            st.topics.isEmpty() -> listOf(TopicEditorRow())
+            else -> st.topics
+        }
+        st.copy(hasTopics = enabled, topics = topics)
+    }
 
     fun addTopic() = _state.update { it.copy(topics = it.topics + TopicEditorRow()) }
 

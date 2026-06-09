@@ -28,3 +28,11 @@ data class Payment(
     @SerialName("CreatedAt") val createdAt: String = "",
     @SerialName("CreatedBy") val createdBy: String = ""
 )
+
+/** Display row for the global payment history list (payment + joined labels). */
+data class PaymentListItem(
+    val payment: Payment,
+    val studentName: String,
+    val courseName: String = "",
+    val registrationSession: RegistrationSession? = null
+)

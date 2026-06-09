@@ -95,6 +95,7 @@ dependencies {
 
     implementation(libs.mpandroidchart)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.compose.shimmer)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

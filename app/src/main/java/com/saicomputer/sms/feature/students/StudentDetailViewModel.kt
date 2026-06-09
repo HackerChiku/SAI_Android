@@ -8,8 +8,12 @@ import com.saicomputer.sms.core.session.SessionManager
 import com.saicomputer.sms.data.dto.ChangeStudentStatusInput
 import com.saicomputer.sms.data.dto.ChangeStudentStatusResponse
 import com.saicomputer.sms.data.dto.StudentGetResponse
+import com.saicomputer.sms.data.dto.VoidPaymentInput
 import com.saicomputer.sms.data.model.ManualStudentStatus
+import com.saicomputer.sms.data.model.ReceiptDetail
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.data.repo.PaymentsRepository
+import com.saicomputer.sms.data.repo.ReceiptsRepository
 import com.saicomputer.sms.data.repo.StudentsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 class StudentDetailViewModel @Inject constructor(
     private val repository: StudentsRepository,
+    private val paymentsRepository: PaymentsRepository,
+    private val receiptsRepository: ReceiptsRepository,
     session: SessionManager
 ) : ViewModel() {
 
@@ -64,6 +70,41 @@ class StudentDetailViewModel @Inject constructor(
                 onError(e.friendlyMessage())
             } catch (e: Exception) {
                 onError(e.message ?: "Failed")
+            }
+        }
+    }
+
+    fun voidPayment(
+        paymentId: String,
+        reason: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                paymentsRepository.void(VoidPaymentInput(paymentId, reason))
+                onSuccess()
+                reload()
+            } catch (e: ApiException) {
+                onError(e.friendlyMessage())
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to void payment")
+            }
+        }
+    }
+
+    fun loadReceipt(
+        receiptId: String,
+        onSuccess: (ReceiptDetail) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                onSuccess(receiptsRepository.get(receiptId).receipt)
+            } catch (e: ApiException) {
+                onError(e.friendlyMessage())
+            } catch (e: Exception) {
+                onError(e.message ?: "Failed to load receipt")
             }
         }
     }

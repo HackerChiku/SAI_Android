@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.saicomputer.sms.core.network.ApiException
 import com.saicomputer.sms.core.result.UiState
 import com.saicomputer.sms.data.dto.UserCreateInput
+import com.saicomputer.sms.data.dto.UserUpdateInput
 import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.data.model.UserRole
 import com.saicomputer.sms.data.repo.UsersRepository
@@ -64,11 +65,35 @@ class UserManagementViewModel @Inject constructor(
         }
     }
 
+    fun updateUser(
+        userId: String,
+        fullName: String,
+        role: UserRole,
+        onMessage: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                repository.update(
+                    UserUpdateInput(
+                        userId = userId,
+                        fullName = fullName.trim(),
+                        role = role
+                    )
+                )
+                onMessage("User updated")
+                load()
+            } catch (e: ApiException) {
+                onMessage(e.friendlyMessage())
+            }
+        }
+    }
+
     fun resetPassword(userId: String, newPassword: String, onMessage: (String) -> Unit) {
         viewModelScope.launch {
             try {
                 val res = repository.resetPassword(userId, newPassword)
                 onMessage("Password reset (${res.sessionsRevoked} session(s) revoked)")
+                load()
             } catch (e: ApiException) {
                 onMessage(e.friendlyMessage())
             }

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand / actions -->
+    <color name="brand_primary">#3B82F6</color>
+    <color name="brand_primary_dark">#1E3A5F</color>
+    <color name="brand_primary_container">#1E3A5F</color>
+    <color name="brand_on_primary">#FFFFFF</color>
+    <color name="brand_secondary">#EF4444</color>
+    <color name="brand_secondary_dark">#FECDD3</color>
+    <color name="brand_secondary_container">#3F1D24</color>
+    <color name="brand_on_secondary">#FFFFFF</color>
+
+    <!-- Surfaces / text -->
+    <color name="background">#0B1120</color>
+    <color name="surface">#121826</color>
+    <color name="surface_elevated">#1A2235</color>
+    <color name="surface_variant">#1A2235</color>
+    <color name="on_surface">#FFFFFF</color>
+    <color name="on_surface_variant">#94A3B8</color>
+    <color name="outline">#1E293B</color>
+    <color name="outline_variant">#1E293B</color>
+
+    <!-- Semantic status -->
+    <color name="success">#22C55E</color>
+    <color name="warning">#F97316</color>
+    <color name="info">#3B82F6</color>
+    <color name="error">#EF4444</color>
+    <color name="neutral">#94A3B8</color>
+    <color name="neutral_muted">#64748B</color>
+    <color name="purple">#8B5CF6</color>
+
+    <!-- Dashboard accents -->
+    <color name="accent_blue">#3B82F6</color>
+    <color name="accent_green">#22C55E</color>
+    <color name="accent_purple">#8B5CF6</color>
+    <color name="accent_cyan">#38BDF8</color>
+    <color name="accent_red">#EF4444</color>
+
+    <!-- Row / state backgrounds -->
+    <color name="row_paid">#14532D</color>
+    <color name="row_overdue">#450A0A</color>
+    <color name="row_pending">#431407</color>
+    <color name="row_selected">#1E3A5F</color>
+    <color name="warning_container">#431407</color>
+
+    <!-- Call action -->
+    <color name="call_action">#22C55E</color>
+    <color name="call_action_container">#14532D</color>
+
+    <!-- Charts -->
+    <color name="chart_line">#3B82F6</color>
+    <color name="chart_grid">#1E293B</color>
+    <color name="chart_axis">#64748B</color>
+    <color name="chart_axis_x">#64748B</color>
+    <color name="chart_fill_start">#663B82F6</color>
+    <color name="chart_upi">#3B82F6</color>
+    <color name="chart_cash">#EF4444</color>
+    <color name="chart_qr">#22C55E</color>
+    <color name="chart_point">#FFFFFF</color>
+
+    <!-- Avatar palette -->
+    <color name="avatar_1_bg">#1E3A5F</color>
+    <color name="avatar_1_fg">#93C5FD</color>
+    <color name="avatar_2_bg">#3B0764</color>
+    <color name="avatar_2_fg">#C4B5FD</color>
+    <color name="avatar_3_bg">#14532D</color>
+    <color name="avatar_3_fg">#86EFAC</color>
+    <color name="avatar_4_bg">#431407</color>
+    <color name="avatar_4_fg">#FDBA74</color>
+    <color name="avatar_5_bg">#500724</color>
+    <color name="avatar_5_fg">#F9A8D4</color>
+    <color name="avatar_6_bg">#0C4A6E</color>
+    <color name="avatar_6_fg">#7DD3FC</color>
+
+    <!-- Material theme containers -->
+    <color name="primary_container_on">#3B82F6</color>
+    <color name="secondary_container_on">#FECDD3</color>
+    <color name="tertiary_container">#3F1D24</color>
+    <color name="tertiary_container_on">#FECDD3</color>
+
+    <!-- Highlight / stat -->
+    <color name="highlight_container">#3F1D24</color>
+    <color name="list_item_surface">#121826</color>
+</resources>

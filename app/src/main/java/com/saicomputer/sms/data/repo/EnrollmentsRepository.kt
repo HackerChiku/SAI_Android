@@ -6,6 +6,8 @@ import com.saicomputer.sms.data.dto.EditInstallmentsInput
 import com.saicomputer.sms.data.dto.EditInstallmentsResponse
 import com.saicomputer.sms.data.dto.EnrollmentCreateInput
 import com.saicomputer.sms.data.dto.EnrollmentGetResponse
+import com.saicomputer.sms.data.dto.EnrollmentListFilters
+import com.saicomputer.sms.data.dto.EnrollmentListResponse
 import com.saicomputer.sms.data.dto.EnrollmentPreviewInput
 import com.saicomputer.sms.data.dto.EnrollmentPreviewResult
 import com.saicomputer.sms.data.dto.InstallmentEnrollmentCreateInput
@@ -33,6 +35,9 @@ private data class EnrollmentIdPascalPayload(@SerialName("EnrollmentID") val enr
 class EnrollmentsRepository @Inject constructor(
     private val api: ApiClient
 ) {
+    suspend fun list(filters: EnrollmentListFilters = EnrollmentListFilters()): EnrollmentListResponse =
+        api.call("enrollments.list", filters)
+
     suspend fun preview(input: EnrollmentPreviewInput): EnrollmentPreviewResult =
         api.call("enrollments.preview", input)
 

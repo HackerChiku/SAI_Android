@@ -9,6 +9,23 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class EnrollmentListFilters(
+    @SerialName("StudentID") val studentId: String = "",
+    @SerialName("CourseID") val courseId: String = "",
+    val status: String = "",
+    val limit: Int = 100,
+    val offset: Int = 0
+)
+
+@Serializable
+data class EnrollmentListResponse(
+    val total: Int = 0,
+    val offset: Int = 0,
+    val limit: Int = 100,
+    val rows: List<Enrollment> = emptyList()
+)
+
+@Serializable
 data class EnrollmentPreviewInput(
     val studentId: String,
     val courseId: String,

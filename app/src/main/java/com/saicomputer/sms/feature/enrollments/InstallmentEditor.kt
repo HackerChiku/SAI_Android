@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.enrollments
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,10 +30,9 @@ import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.ui.AmountField
 import com.saicomputer.sms.core.ui.DatePickerField
 import com.saicomputer.sms.core.ui.GenericBadge
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusRed
 import com.saicomputer.sms.core.validation.InstallmentDraft
 import com.saicomputer.sms.core.validation.InstallmentValidation
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 data class EditableInstallment(
     val installmentId: String? = null,
@@ -59,21 +59,21 @@ fun InstallmentEditor(
     val result = InstallmentValidation.validate(drafts, totalRequired, ceiling, startDate)
     val sum = result.sum
 
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
         rows.forEachIndexed { index, row ->
             val isPaid = row.amountPaid > 0
             val belowFloor = row.amountDue < row.amountPaid
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(appDimens().fieldShape)
                     .background(
-                        if (isPaid) StatusEmerald.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface
+                        if (isPaid) appColors().success.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface
                     )
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(appDimens().spacingMd)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("#${index + 1}", fontWeight = FontWeight.SemiBold, modifier = Modifier.width(36.dp))
+                        Text("#${index + 1}", fontWeight = FontWeight.SemiBold, modifier = Modifier.width(appDimens().iconSizeXxl))
                         AmountField(
                             value = row.amountDue,
                             onValueChange = { v ->
@@ -104,7 +104,7 @@ fun InstallmentEditor(
                         label = "Due date",
                         enabled = editable
                     )
-                    if (isPaid) GenericBadge("Paid ${Formatters.formatInr(row.amountPaid)}", StatusEmerald)
+                    if (isPaid) GenericBadge("Paid ${Formatters.formatInr(row.amountPaid)}", appColors().success)
                 }
             }
         }
@@ -127,19 +127,19 @@ fun InstallmentEditor(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
                 "Total ${Formatters.formatInr(sum)} / Required ${Formatters.formatInr(totalRequired)}",
-                color = if (matches) StatusEmerald else StatusRed,
+                color = if (matches) appColors().success else appColors().error,
                 fontWeight = FontWeight.SemiBold
             )
             if (!matches) {
                 val diff = totalRequired - sum
                 Text(
                     if (diff > 0) "(short by ${Formatters.formatInr(diff)})" else "(over by ${Formatters.formatInr(-diff)})",
-                    color = StatusRed
+                    color = appColors().error
                 )
             }
         }
         result.errors.forEach { err ->
-            Text("• $err", color = StatusRed, style = MaterialTheme.typography.labelSmall)
+            Text("• $err", color = appColors().error, style = MaterialTheme.typography.labelSmall)
         }
     }
 }
