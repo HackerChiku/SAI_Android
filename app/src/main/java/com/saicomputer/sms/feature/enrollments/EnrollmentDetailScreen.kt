@@ -53,6 +53,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -114,8 +115,12 @@ fun EnrollmentDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     LaunchedEffect(enrollmentId) { viewModel.load(enrollmentId) }
+    LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { snackbarController.show(scope, it) }
+    }
 
     val msg: (String) -> Unit = { snackbarController.show(scope, it) }
 
@@ -143,22 +148,28 @@ fun EnrollmentDetailScreen(
             }
         }
         is UiState.Success -> {
-            EnrollmentDetailContent(
-                e = s.data.enrollment,
-                payments = s.data.payments.orEmpty(),
-                canEditInstallments = can(user, "enrollments.editInstallments"),
-                canMarkComplete = can(user, "enrollments.markComplete"),
-                canCancel = can(user, "enrollments.cancel"),
-                canExclude = can(user, "enrollments.setExcludedFromBilling"),
-                canMarkTopics = can(user, "enrollments.topics.markComplete"),
-                canUnmarkTopics = can(user, "enrollments.topics.unmark"),
-                canBackdate = can(user, "system.backdate"),
-                onBack = onBack,
-                topBarTitle = topBarTitle,
-                onRecordPayment = { onRecordPayment(s.data.enrollment.enrollmentId) },
-                viewModel = viewModel,
-                onMessage = msg
-            )
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = viewModel::manualRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                EnrollmentDetailContent(
+                    e = s.data.enrollment,
+                    payments = s.data.payments.orEmpty(),
+                    canEditInstallments = can(user, "enrollments.editInstallments"),
+                    canMarkComplete = can(user, "enrollments.markComplete"),
+                    canCancel = can(user, "enrollments.cancel"),
+                    canExclude = can(user, "enrollments.setExcludedFromBilling"),
+                    canMarkTopics = can(user, "enrollments.topics.markComplete"),
+                    canUnmarkTopics = can(user, "enrollments.topics.unmark"),
+                    canBackdate = can(user, "system.backdate"),
+                    onBack = onBack,
+                    topBarTitle = topBarTitle,
+                    onRecordPayment = { onRecordPayment(s.data.enrollment.enrollmentId) },
+                    viewModel = viewModel,
+                    onMessage = msg
+                )
+            }
         }
     }
 }

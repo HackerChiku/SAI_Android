@@ -1,6 +1,7 @@
 package com.saicomputer.sms.feature.enrollments
 
 import com.saicomputer.sms.data.model.BillingType
+import com.saicomputer.sms.data.model.Course
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.EnrollmentStatus
 
@@ -125,3 +126,6 @@ private fun sortEnrollmentItems(
     EnrollmentSort.BALANCE_HIGH ->
         items.sortedByDescending { it.enrollment.balance }
 }
+
+fun Enrollment.displayCourseName(coursesById: Map<String, Course>): String =
+    courseName ?: coursesById[courseId]?.courseName ?: courseId

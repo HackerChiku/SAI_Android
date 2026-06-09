@@ -18,7 +18,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class SessionManager @Inject constructor(
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    private val cacheRegistry: SessionCacheRegistry
 ) {
     @Volatile
     var token: String? = prefs.getString(KEY_TOKEN, null)
@@ -43,6 +44,7 @@ class SessionManager @Inject constructor(
         token = null
         prefs.edit().remove(KEY_TOKEN).apply()
         _currentUser.value = null
+        cacheRegistry.clearAll()
     }
 
     companion object {

@@ -11,8 +11,11 @@ import com.saicomputer.sms.data.repo.ReceiptsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,22 +32,63 @@ class ReceiptsViewModel @Inject constructor(
     private val _displayItems = MutableStateFlow<UiState<List<ReceiptListItem>>>(UiState.Loading)
     val displayItems: StateFlow<UiState<List<ReceiptListItem>>> = _displayItems.asStateFlow()
 
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    private val _refreshError = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val refreshError: SharedFlow<String> = _refreshError.asSharedFlow()
+
     private var rawItems: List<ReceiptListItem> = emptyList()
     private var searchJob: Job? = null
 
-    init { load() }
+    init {
+        loadInitial()
+    }
 
-    fun load() {
-        _displayItems.value = UiState.Loading
+    private fun loadInitial() {
+        if (isDefaultServerFilters() && tryUseCache()) {
+            if (!repository.isBaseListFresh()) refreshSilently()
+        } else {
+            load(force = true)
+        }
+    }
+
+    fun load(force: Boolean = true) {
+        if (force) _displayItems.value = UiState.Loading
         viewModelScope.launch {
             try {
-                rawItems = repository.list(buildApiFilters(_filters.value)).receipts
+                rawItems = fetchItems()
                 publishDisplayItems()
             } catch (e: ApiException) {
                 _displayItems.value = UiState.Error(e.friendlyMessage())
             } catch (e: Exception) {
                 _displayItems.value = UiState.Error(e.message ?: "Failed")
             }
+        }
+    }
+
+    fun manualRefresh() {
+        if (_refreshing.value) return
+        _refreshing.value = true
+        viewModelScope.launch {
+            try {
+                rawItems = fetchItems()
+                publishDisplayItems()
+            } catch (e: Exception) {
+                _refreshError.emit(friendlyMessage(e))
+            } finally {
+                _refreshing.value = false
+            }
+        }
+    }
+
+    private fun refreshSilently() {
+        viewModelScope.launch {
+            runCatching { fetchItems() }
+                .onSuccess { items ->
+                    rawItems = items
+                    publishDisplayItems()
+                }
         }
     }
 
@@ -59,6 +103,7 @@ class ReceiptsViewModel @Inject constructor(
 
     fun onEmailStatusChange(value: String) {
         _filters.update { it.copy(emailStatus = value) }
+        if (isDefaultServerFilters() && tryUseCache()) return
         load()
     }
 
@@ -116,6 +161,32 @@ class ReceiptsViewModel @Inject constructor(
         _displayItems.value = UiState.Success(applyReceiptFiltersAndSort(rawItems, _filters.value))
     }
 
+    private fun isDefaultServerFilters(): Boolean {
+        val f = _filters.value
+        return f.emailStatus == ReceiptEmailStatusFilter.ALL &&
+            f.fromDate.isNullOrBlank() &&
+            f.toDate.isNullOrBlank()
+    }
+
+    private fun tryUseCache(): Boolean {
+        val cached = repository.getCachedBaseList() ?: return false
+        rawItems = cached
+        publishDisplayItems()
+        return true
+    }
+
+    private suspend fun fetchItems(): List<ReceiptListItem> {
+        val items = if (isDefaultServerFilters()) {
+            repository.refreshBaseList()
+        } else {
+            repository.list(buildApiFilters(_filters.value)).receipts
+        }
+        if (isDefaultServerFilters()) {
+            repository.cacheBaseList(items)
+        }
+        return items
+    }
+
     private fun buildApiFilters(state: ReceiptListFiltersState): ReceiptListFilters =
         ReceiptListFilters(
             emailStatus = if (state.emailStatus == ReceiptEmailStatusFilter.ALL) null else state.emailStatus,
@@ -145,10 +216,15 @@ class ReceiptsViewModel @Inject constructor(
             try {
                 repository.resendEmail(receiptId, email)
                 onMessage("Email queued")
-                load()
+                load(force = false)
             } catch (e: ApiException) {
                 onMessage(e.friendlyMessage())
             }
         }
+    }
+
+    private fun friendlyMessage(error: Throwable): String = when (error) {
+        is ApiException -> error.friendlyMessage()
+        else -> error.message ?: "Refresh failed"
     }
 }

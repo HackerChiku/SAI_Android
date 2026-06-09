@@ -1,6 +1,11 @@
 package com.saicomputer.sms.data.repo
 
 import com.saicomputer.sms.core.network.ApiClient
+import com.saicomputer.sms.core.session.Cached
+import com.saicomputer.sms.core.session.KeyedSessionCache
+import com.saicomputer.sms.core.session.SessionCache
+import com.saicomputer.sms.core.session.SessionCacheRegistry
+import kotlinx.coroutines.flow.StateFlow
 import com.saicomputer.sms.data.dto.CancelEnrollmentInput
 import com.saicomputer.sms.data.dto.EditInstallmentsInput
 import com.saicomputer.sms.data.dto.EditInstallmentsResponse
@@ -33,10 +38,35 @@ private data class EnrollmentIdPascalPayload(@SerialName("EnrollmentID") val enr
 
 @Singleton
 class EnrollmentsRepository @Inject constructor(
-    private val api: ApiClient
+    private val api: ApiClient,
+    registry: SessionCacheRegistry
 ) {
+    private val baseListCache = SessionCache<List<Enrollment>>(registry)
+    private val detailCache = KeyedSessionCache<String, EnrollmentGetResponse>(registry)
+
+    val baseListFlow: StateFlow<Cached<List<Enrollment>>?> = baseListCache.flow
+
+    fun getCachedBaseList(): List<Enrollment>? = baseListCache.value
+
+    fun isBaseListFresh(): Boolean = baseListCache.isFresh()
+
+    fun getCachedEnrollment(enrollmentId: String): EnrollmentGetResponse? =
+        detailCache.get(enrollmentId)
+
+    fun isEnrollmentFresh(enrollmentId: String): Boolean = detailCache.isFresh(enrollmentId)
+
     suspend fun list(filters: EnrollmentListFilters = EnrollmentListFilters()): EnrollmentListResponse =
         api.call("enrollments.list", filters)
+
+    fun cacheBaseList(rows: List<Enrollment>) {
+        baseListCache.put(rows)
+    }
+
+    suspend fun refreshBaseList(): List<Enrollment> {
+        val rows = list(EnrollmentListFilters(limit = 500)).rows
+        baseListCache.put(rows)
+        return rows
+    }
 
     suspend fun preview(input: EnrollmentPreviewInput): EnrollmentPreviewResult =
         api.call("enrollments.preview", input)
@@ -59,6 +89,12 @@ class EnrollmentsRepository @Inject constructor(
         val payments: List<Payment> =
             data["payments"]?.let { api.json.decodeFromJsonElement(it) } ?: emptyList()
         return EnrollmentGetResponse(enrollment, payments)
+    }
+
+    suspend fun refreshEnrollment(enrollmentId: String): EnrollmentGetResponse {
+        val result = get(enrollmentId)
+        detailCache.put(enrollmentId, result)
+        return result
     }
 
     suspend fun markComplete(input: MarkCompleteInput): MarkCompleteResponse =

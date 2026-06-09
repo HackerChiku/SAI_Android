@@ -8,6 +8,7 @@ import com.saicomputer.sms.data.dto.EnrollmentListFilters
 import com.saicomputer.sms.data.dto.StudentListFilters
 import com.saicomputer.sms.data.model.Course
 import com.saicomputer.sms.data.model.Enrollment
+import com.saicomputer.sms.data.model.Student
 import com.saicomputer.sms.data.repo.CoursesRepository
 import com.saicomputer.sms.data.repo.EnrollmentsRepository
 import com.saicomputer.sms.data.repo.StudentsRepository
@@ -16,8 +17,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -50,29 +54,47 @@ class EnrollmentsListViewModel @Inject constructor(
     private val _displayItems = MutableStateFlow<UiState<List<EnrollmentListItem>>>(UiState.Loading)
     val displayItems: StateFlow<UiState<List<EnrollmentListItem>>> = _displayItems.asStateFlow()
 
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    private val _refreshError = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val refreshError: SharedFlow<String> = _refreshError.asSharedFlow()
+
     private var rawItems: List<EnrollmentListItem> = emptyList()
     private var searchJob: Job? = null
 
     init {
         loadCourses()
-        load()
+        loadInitial()
     }
 
     private fun loadCourses() {
+        coursesRepository.getCachedList()?.let { publishCourseOptions(it) }
         viewModelScope.launch {
-            runCatching {
-                coursesRepository.list().rows.map { course ->
-                    CourseFilterOption(
-                        courseId = course.courseId,
-                        label = course.courseName.ifBlank { course.courseFullName }
-                    )
-                }
-            }.onSuccess { _courses.value = it }
+            runCatching { coursesRepository.refreshList() }
+                .onSuccess { publishCourseOptions(it) }
         }
     }
 
-    fun load() {
-        _displayItems.value = UiState.Loading
+    private fun publishCourseOptions(courses: List<Course>) {
+        _courses.value = courses.map { course ->
+            CourseFilterOption(
+                courseId = course.courseId,
+                label = course.courseName.ifBlank { course.courseFullName }
+            )
+        }
+    }
+
+    private fun loadInitial() {
+        if (tryComposeFromCache()) {
+            if (!repository.isBaseListFresh()) refreshSilently()
+        } else {
+            load(force = true)
+        }
+    }
+
+    fun load(force: Boolean = true) {
+        if (force) _displayItems.value = UiState.Loading
         viewModelScope.launch {
             try {
                 rawItems = loadItems()
@@ -82,6 +104,31 @@ class EnrollmentsListViewModel @Inject constructor(
             } catch (e: Exception) {
                 _displayItems.value = UiState.Error(e.message ?: "Failed to load enrollments")
             }
+        }
+    }
+
+    fun manualRefresh() {
+        if (_refreshing.value) return
+        _refreshing.value = true
+        viewModelScope.launch {
+            try {
+                rawItems = loadItems()
+                publishDisplayItems()
+            } catch (e: Exception) {
+                _refreshError.emit(friendlyMessage(e))
+            } finally {
+                _refreshing.value = false
+            }
+        }
+    }
+
+    private fun refreshSilently() {
+        viewModelScope.launch {
+            runCatching { loadItems() }
+                .onSuccess { items ->
+                    rawItems = items
+                    publishDisplayItems()
+                }
         }
     }
 
@@ -142,12 +189,28 @@ class EnrollmentsListViewModel @Inject constructor(
         }
 
     private fun reloadIfServerFiltersChanged() {
+        if (isDefaultServerFilters() && tryComposeFromCache()) return
         load()
     }
 
     private fun publishDisplayItems() {
         if (_displayItems.value is UiState.Error) return
         _displayItems.value = UiState.Success(applyEnrollmentFiltersAndSort(rawItems, _filters.value))
+    }
+
+    private fun isDefaultServerFilters(): Boolean {
+        val f = _filters.value
+        return f.displayStatus == EnrollmentDisplayStatus.ALL && f.courseId == "All"
+    }
+
+    private fun tryComposeFromCache(): Boolean {
+        if (!isDefaultServerFilters()) return false
+        val enrollments = repository.getCachedBaseList() ?: return false
+        val students = studentsRepository.getCachedBaseList() ?: return false
+        val courses = coursesRepository.getCachedList() ?: return false
+        rawItems = composeItems(enrollments, students, courses)
+        publishDisplayItems()
+        return true
     }
 
     private suspend fun loadItems(): List<EnrollmentListItem> = coroutineScope {
@@ -160,36 +223,51 @@ class EnrollmentsListViewModel @Inject constructor(
 
         val enrollmentsDeferred = async { repository.list(apiFilters).rows }
         val studentsDeferred = async {
-            studentsRepository.list(StudentListFilters(limit = 1000)).rows.associateBy { it.studentId }
+            studentsRepository.list(StudentListFilters(limit = 1000)).rows
         }
-        val coursesDeferred = async {
-            coursesRepository.list().rows.associateBy { it.courseId }
-        }
+        val coursesDeferred = async { coursesRepository.list().rows }
 
         val enrollments = enrollmentsDeferred.await()
-        val studentsById = studentsDeferred.await()
-        val coursesById = coursesDeferred.await()
+        val students = studentsDeferred.await()
+        val courses = coursesDeferred.await()
 
-        enrollments.map { enrollment ->
-            enrollment.toListItem(studentsById, coursesById)
+        if (isDefaultServerFilters()) {
+            repository.cacheBaseList(enrollments)
+            studentsRepository.cacheBaseList(students)
+            coursesRepository.cacheList(courses)
+            publishCourseOptions(courses)
         }
+
+        composeItems(enrollments, students, courses)
+    }
+
+    private fun composeItems(
+        enrollments: List<Enrollment>,
+        students: List<Student>,
+        courses: List<Course>
+    ): List<EnrollmentListItem> {
+        val studentsById = students.associateBy { it.studentId }
+        val coursesById = courses.associateBy { it.courseId }
+        return enrollments.map { it.toListItem(studentsById, coursesById) }
     }
 
     private fun Enrollment.toListItem(
-        studentsById: Map<String, com.saicomputer.sms.data.model.Student>,
+        studentsById: Map<String, Student>,
         coursesById: Map<String, Course>
     ): EnrollmentListItem {
         val studentName = studentName
             ?: studentsById[studentId]?.fullName
             ?: studentId
             ?: "Unknown student"
-        val courseName = courseName
-            ?: coursesById[courseId]?.courseName
-            ?: courseId
         return EnrollmentListItem(
             enrollment = this,
             studentName = studentName,
-            courseName = courseName
+            courseName = displayCourseName(coursesById)
         )
+    }
+
+    private fun friendlyMessage(error: Throwable): String = when (error) {
+        is ApiException -> error.friendlyMessage()
+        else -> error.message ?: "Refresh failed"
     }
 }

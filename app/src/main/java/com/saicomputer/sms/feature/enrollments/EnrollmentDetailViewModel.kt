@@ -23,8 +23,11 @@ import com.saicomputer.sms.data.repo.ReceiptsRepository
 import com.saicomputer.sms.data.repo.SubscriptionsRepository
 import com.saicomputer.sms.data.repo.TopicsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -41,16 +44,32 @@ class EnrollmentDetailViewModel @Inject constructor(
     private val _state = MutableStateFlow<UiState<EnrollmentGetResponse>>(UiState.Loading)
     val state: StateFlow<UiState<EnrollmentGetResponse>> = _state.asStateFlow()
 
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    private val _refreshError = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val refreshError: SharedFlow<String> = _refreshError.asSharedFlow()
+
     val currentUser: StateFlow<User?> = session.currentUser
 
     private var enrollmentId: String = ""
 
     fun load(id: String) {
         enrollmentId = id
+        val cached = repository.getCachedEnrollment(id)
+        if (cached != null) {
+            _state.value = UiState.Success(cached)
+            if (!repository.isEnrollmentFresh(id)) refreshSilently(id)
+        } else {
+            fetch(id)
+        }
+    }
+
+    private fun fetch(id: String) {
         _state.value = UiState.Loading
         viewModelScope.launch {
             try {
-                _state.value = UiState.Success(repository.get(id))
+                _state.value = UiState.Success(repository.refreshEnrollment(id))
             } catch (e: ApiException) {
                 _state.value = UiState.Error(e.friendlyMessage(), e.code)
             } catch (e: Exception) {
@@ -59,7 +78,34 @@ class EnrollmentDetailViewModel @Inject constructor(
         }
     }
 
-    fun reload() = load(enrollmentId)
+    private fun refreshSilently(id: String) {
+        viewModelScope.launch {
+            runCatching { repository.refreshEnrollment(id) }
+                .onSuccess { if (enrollmentId == id) _state.value = UiState.Success(it) }
+        }
+    }
+
+    fun manualRefresh() {
+        val id = enrollmentId
+        if (id.isBlank() || _refreshing.value) return
+        _refreshing.value = true
+        viewModelScope.launch {
+            try {
+                _state.value = UiState.Success(repository.refreshEnrollment(id))
+            } catch (e: Exception) {
+                _refreshError.emit(friendlyMessage(e))
+            } finally {
+                _refreshing.value = false
+            }
+        }
+    }
+
+    fun reload() = fetch(enrollmentId)
+
+    private fun friendlyMessage(error: Throwable): String = when (error) {
+        is ApiException -> error.friendlyMessage()
+        else -> error.message ?: "Failed"
+    }
 
     fun payments(): List<Payment> = (_state.value as? UiState.Success)?.data?.payments.orEmpty()
 

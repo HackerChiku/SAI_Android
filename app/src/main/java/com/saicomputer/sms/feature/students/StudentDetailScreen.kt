@@ -56,6 +56,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
@@ -106,6 +107,7 @@ import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.StudentPhotoAvatar
 import com.saicomputer.sms.core.ui.rememberBase64ImageBitmap
 import com.saicomputer.sms.data.model.BillingType
+import com.saicomputer.sms.data.model.Course
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.EnrollmentStatus
 import com.saicomputer.sms.data.model.Gender
@@ -116,6 +118,7 @@ import com.saicomputer.sms.data.model.RegistrationSession
 import com.saicomputer.sms.data.model.Student
 import com.saicomputer.sms.data.model.StudentStatus
 import com.saicomputer.sms.data.model.TERMINAL_STUDENT_STATUSES
+import com.saicomputer.sms.feature.enrollments.displayCourseName
 import kotlinx.coroutines.CoroutineScope
 import com.saicomputer.sms.core.ui.theme.appDimens
 
@@ -135,7 +138,7 @@ private val GENDER_LABELS = mapOf(
     Gender.PreferNotToSay to "Prefer not to say"
 )
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun StudentDetailScreen(
     studentId: String,
@@ -150,9 +153,14 @@ fun StudentDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
+    val coursesById by viewModel.coursesById.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     androidx.compose.runtime.LaunchedEffect(studentId) { viewModel.load(studentId) }
+    androidx.compose.runtime.LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { snackbarController.show(scope, it) }
+    }
 
     CrossfadeUiState(
         state = state,
@@ -169,24 +177,31 @@ fun StudentDetailScreen(
             }
         },
         success = { data ->
-            StudentDetailContent(
-                student = data.student,
-                enrollments = data.enrollments.orEmpty(),
-                payments = data.payments.orEmpty(),
-                canChangeStatus = can(user, "students.changeStatus"),
-                canEdit = true,
-                canVoid = can(user, "payments.void"),
-                canReplaceAadhaar = can(user, "students.replaceAadhaar"),
-                onBack = onBack,
-                onEdit = onEdit,
-                onNewEnrollment = onNewEnrollment,
-                onOpenEnrollment = onOpenEnrollment,
-                onRecordPayment = onRecordPayment,
-                documentsViewModel = documentsViewModel,
-                viewModel = viewModel,
-                snackbarController = snackbarController,
-                scope = scope
-            )
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = viewModel::manualRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                StudentDetailContent(
+                    student = data.student,
+                    enrollments = data.enrollments.orEmpty(),
+                    payments = data.payments.orEmpty(),
+                    coursesById = coursesById,
+                    canChangeStatus = can(user, "students.changeStatus"),
+                    canEdit = true,
+                    canVoid = can(user, "payments.void"),
+                    canReplaceAadhaar = can(user, "students.replaceAadhaar"),
+                    onBack = onBack,
+                    onEdit = onEdit,
+                    onNewEnrollment = onNewEnrollment,
+                    onOpenEnrollment = onOpenEnrollment,
+                    onRecordPayment = onRecordPayment,
+                    documentsViewModel = documentsViewModel,
+                    viewModel = viewModel,
+                    snackbarController = snackbarController,
+                    scope = scope
+                )
+            }
         }
     )
 }
@@ -197,6 +212,7 @@ private fun StudentDetailContent(
     student: Student,
     enrollments: List<Enrollment>,
     payments: List<Payment>,
+    coursesById: Map<String, Course>,
     canChangeStatus: Boolean,
     canEdit: Boolean,
     canVoid: Boolean,
@@ -310,7 +326,7 @@ private fun StudentDetailContent(
             ) {
                 when (selectedTab) {
                     0 -> ProfileTab(student)
-                    1 -> EnrollmentsTab(enrollments, onOpenEnrollment)
+                    1 -> EnrollmentsTab(enrollments, coursesById, onOpenEnrollment)
                     2 -> PaymentsTab(
                         payments = payments,
                         canVoid = canVoid,
@@ -507,7 +523,7 @@ private fun StudentHeroCard(
                     .fillMaxWidth()
                     .padding(appDimens().spacingLg),
                 horizontalArrangement = Arrangement.spacedBy(appDimens().spacing14),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 StudentPhotoAvatar(
                     name = student.fullName,
@@ -516,21 +532,19 @@ private fun StudentHeroCard(
                     size = 80
                 )
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(appDimens().loginLogoSize),
-                    verticalArrangement = Arrangement.Center
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
                 ) {
                     Text(
                         student.fullName,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         student.studentId,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -724,20 +738,32 @@ private fun DetailField(label: String, value: String) {
 }
 
 @Composable
-private fun EnrollmentsTab(enrollments: List<Enrollment>, onOpen: (String) -> Unit) {
+private fun EnrollmentsTab(
+    enrollments: List<Enrollment>,
+    coursesById: Map<String, Course>,
+    onOpen: (String) -> Unit
+) {
     if (enrollments.isEmpty()) {
         EmptyTabMessage("No enrollments yet.")
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)) {
         enrollments.forEach { enrollment ->
-            EnrollmentCard(enrollment = enrollment, onClick = { onOpen(enrollment.enrollmentId) })
+            EnrollmentCard(
+                enrollment = enrollment,
+                courseDisplayName = enrollment.displayCourseName(coursesById),
+                onClick = { onOpen(enrollment.enrollmentId) }
+            )
         }
     }
 }
 
 @Composable
-private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
+private fun EnrollmentCard(
+    enrollment: Enrollment,
+    courseDisplayName: String,
+    onClick: () -> Unit
+) {
     val statusLabel = when (enrollment.enrollmentStatus) {
         EnrollmentStatus.Ongoing -> "Active"
         EnrollmentStatus.Completed -> "Completed"
@@ -771,7 +797,7 @@ private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    enrollment.courseName ?: enrollment.courseId,
+                    courseDisplayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)

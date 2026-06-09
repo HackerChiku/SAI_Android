@@ -24,13 +24,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +53,7 @@ import com.saicomputer.sms.core.ui.FilterDropdown
 import com.saicomputer.sms.core.ui.ListSearchFilterSortBar
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.ProfileMenuButton
 import com.saicomputer.sms.core.ui.SortDialog
 import com.saicomputer.sms.data.model.BillingType
@@ -58,16 +62,26 @@ import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.core.ui.theme.appDimens
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnrollmentsListScreen(
     user: User? = null,
     onNewEnrollment: () -> Unit,
     onOpenEnrollment: (String) -> Unit,
+    snackbarController: SnackbarController? = null,
     viewModel: EnrollmentsListViewModel = hiltViewModel()
 ) {
     val filters by viewModel.filters.collectAsStateWithLifecycle()
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val displayItems by viewModel.displayItems.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { message ->
+            snackbarController?.show(scope, message)
+        }
+    }
     var showFilterDialog by remember { mutableStateOf(false) }
     var showSortDialog by remember { mutableStateOf(false) }
 
@@ -127,14 +141,19 @@ fun EnrollmentsListScreen(
 
             Spacer(Modifier.height(appDimens().spacingMd))
 
-            when (val s = displayItems) {
-                is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
-                is UiState.Error -> ErrorState(
-                    message = s.message,
-                    onRetry = viewModel::load,
-                    modifier = Modifier.fillMaxSize()
-                )
-                is UiState.Success -> {
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = viewModel::manualRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when (val s = displayItems) {
+                    is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
+                    is UiState.Error -> ErrorState(
+                        message = s.message,
+                        onRetry = { viewModel.load(force = true) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    is UiState.Success -> {
                     if (s.data.isEmpty()) {
                         if (viewModel.hasActiveClientFilters) {
                             EmptyState(
@@ -165,6 +184,7 @@ fun EnrollmentsListScreen(
                             }
                         }
                     }
+                }
                 }
             }
         }
