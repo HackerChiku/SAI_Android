@@ -23,10 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.saicomputer.sms.core.ui.FormLoadingSkeleton
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.SubpageTitleBar
-import com.saicomputer.sms.core.ui.theme.OffWhite
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun InstituteSettingsScreen(
@@ -43,24 +44,21 @@ fun InstituteSettingsScreen(
         SubpageTitleBar(title = "Settings", onBack = onBack, user = user)
 
         if (state.loading) {
-            Column(
+            FormLoadingSkeleton(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(OffWhite),
-                verticalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator(Modifier.padding(16.dp))
-            }
+                    .background(MaterialTheme.colorScheme.background)
+            )
             return@Column
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OffWhite)
-                .padding(16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(appDimens().spacingLg)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             state.rows.forEach { row ->
                 OutlinedTextField(
@@ -82,8 +80,8 @@ fun InstituteSettingsScreen(
             ) {
                 if (state.submitting) {
                     CircularProgressIndicator(
-                        Modifier.height(20.dp),
-                        strokeWidth = 2.dp,
+                        Modifier.height(appDimens().iconSizeMd),
+                        strokeWidth = appDimens().spacingXxs,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
@@ -93,7 +91,7 @@ fun InstituteSettingsScreen(
             OutlinedButton(onClick = onOpenUsers, modifier = Modifier.fillMaxWidth()) {
                 Text("Manage Users")
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(appDimens().spacingSm))
         }
     }
 }

@@ -1,8 +1,13 @@
 package com.saicomputer.sms.feature.dashboard
 
+import com.saicomputer.sms.core.ui.theme.appColors
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +29,8 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CurrencyRupee
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Card
@@ -44,6 +51,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,22 +61,16 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
+import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ErrorState
-import com.saicomputer.sms.core.ui.LoadingSkeleton
+import com.saicomputer.sms.core.ui.DashboardLoadingSkeleton
 import com.saicomputer.sms.core.ui.PhotoAvatar
 import com.saicomputer.sms.core.ui.ProfileMenuButton
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.BrandRedTint
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
 import com.saicomputer.sms.data.model.DashboardPeriod
 import com.saicomputer.sms.data.model.DashboardPendingStudent
 import com.saicomputer.sms.data.model.DashboardSummaryResponse
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 private val PERIOD_LABELS = mapOf(
     DashboardPeriod.thisMonth to "This Month",
@@ -82,10 +85,39 @@ private data class StatCard(
     val value: String,
     val subtitle: String?,
     val icon: ImageVector,
-    val iconTint: androidx.compose.ui.graphics.Color,
-    val iconBackground: androidx.compose.ui.graphics.Color,
+    val accent: StatCardAccent,
     val highlighted: Boolean = false
 )
+
+private enum class StatCardAccent {
+    Blue, Green, Purple, Cyan, Red
+}
+
+@Composable
+private fun isDashboardDarkTheme(): Boolean =
+    MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+@Composable
+private fun StatCardAccent.iconTint(): Color = if (isDashboardDarkTheme()) {
+    when (this) {
+        StatCardAccent.Blue -> appColors().accentBlue
+        StatCardAccent.Green -> appColors().accentGreen
+        StatCardAccent.Purple -> appColors().accentPurple
+        StatCardAccent.Cyan -> appColors().accentCyan
+        StatCardAccent.Red -> appColors().accentRed
+    }
+} else {
+    when (this) {
+        StatCardAccent.Blue -> MaterialTheme.colorScheme.primary
+        StatCardAccent.Green -> appColors().success
+        StatCardAccent.Purple -> appColors().purple
+        StatCardAccent.Cyan -> MaterialTheme.colorScheme.primary
+        StatCardAccent.Red -> MaterialTheme.colorScheme.tertiary
+    }
+}
+
+@Composable
+private fun StatCardAccent.iconBackground(): Color = iconTint().copy(alpha = if (isDashboardDarkTheme()) 0.18f else 0.12f)
 
 @Composable
 fun DashboardScreen(
@@ -115,7 +147,7 @@ fun DashboardScreen(
             label = "dashboardPhase"
         ) { p ->
             when (p) {
-                DashboardPhase.Loading -> LoadingSkeleton(Modifier.fillMaxSize())
+                DashboardPhase.Loading -> DashboardLoadingSkeleton(Modifier.fillMaxSize())
                 DashboardPhase.Error ->
                     ErrorState(
                         message = state.error ?: "Something went wrong",
@@ -154,44 +186,67 @@ private fun DashboardHeader(
 ) {
     val periodLabel = PERIOD_LABELS[period] ?: "This Month"
     var expanded by remember { mutableStateOf(false) }
+    val isDark = isDashboardDarkTheme()
+    val headerBackground = if (isDark) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary
+    val titleColor = if (isDark) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.surface
+    val mutedColor = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-    ) {
+    AppTopBarBox(containerColor = headerBackground) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
-            Text(
-                "Dashboard",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = BaseWhite
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Dashboard",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = titleColor
+                )
+                user?.fullName?.takeIf { it.isNotBlank() }?.let { name ->
+                    Text(
+                        "Welcome back, $name 👋",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = mutedColor,
+                        modifier = Modifier.padding(top = appDimens().spacingXs)
+                    )
+                }
+            }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box {
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(BrandBlue.copy(alpha = 0.6f))
+                            .clip(appDimens().logoShape)
+                            .background(
+                                if (isDark) appColors().surfaceElevated else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                            )
+                            .then(
+                                if (isDark) {
+                                    Modifier.border(appDimens().strokeHairline, appColors().outline, appDimens().logoShape)
+                                } else {
+                                    Modifier
+                                }
+                            )
                             .clickable { expanded = true }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                            .padding(horizontal = appDimens().spacingMd, vertical = appDimens().spacing6),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)
                     ) {
-                        Text(periodLabel, color = BaseWhite, style = MaterialTheme.typography.labelLarge)
+                        Text(
+                            periodLabel,
+                            color = titleColor,
+                            style = MaterialTheme.typography.labelLarge
+                        )
                         Icon(
                             Icons.Outlined.ArrowDropDown,
                             contentDescription = "Change period",
-                            tint = BaseWhite
+                            tint = titleColor
                         )
                     }
                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -220,54 +275,49 @@ private fun DashboardContent(
     onOpenStudent: (String) -> Unit
 ) {
     val periodLabel = PERIOD_LABELS[period] ?: "This Month"
+    val isDark = isDashboardDarkTheme()
     val cards = listOf(
         StatCard(
             "New Enrollments",
             summary.totalNewEnrollments.toString(),
             periodLabel,
             Icons.AutoMirrored.Outlined.MenuBook,
-            BrandBlue,
-            BrandBlueTint
+            StatCardAccent.Blue
         ),
         StatCard(
             "Fee Collected",
             Formatters.formatInr(summary.totalFeeCollected),
             periodLabel,
             Icons.Outlined.CurrencyRupee,
-            BrandBlue,
-            BrandBlueTint
+            StatCardAccent.Green
         ),
         StatCard(
             "Fee Due",
             Formatters.formatInr(summary.totalFeeDueThisMonth),
             "Current month only",
             Icons.Outlined.Schedule,
-            BrandBlue,
-            BrandBlueTint
+            StatCardAccent.Purple
         ),
         StatCard(
             "Active Enrollments",
             summary.activeEnrollments.toString(),
             null,
             Icons.Outlined.People,
-            BrandBlue,
-            BrandBlueTint
+            StatCardAccent.Cyan
         ),
         StatCard(
             "Completed",
             summary.completedThisPeriod.toString(),
             periodLabel,
             Icons.Outlined.CheckCircle,
-            BrandBlue,
-            BrandBlueTint
+            StatCardAccent.Green
         ),
         StatCard(
             "Payment Pending",
             summary.paymentPendingThisMonth.toString(),
-            null,
+            if (isDark) "Needs Attention" else null,
             Icons.Outlined.ErrorOutline,
-            BrandRed,
-            BrandRedTint,
+            StatCardAccent.Red,
             highlighted = true
         )
     )
@@ -278,23 +328,23 @@ private fun DashboardContent(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(OffWhite),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(appDimens().spacingLg),
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingLg)
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
                 cards.chunked(2).forEach { rowCards ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
                     ) {
                         rowCards.forEach { card ->
                             StatCardView(
                                 card = card,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(STAT_CARD_HEIGHT)
+                                    .height(appDimens().statCardHeight)
                             )
                         }
                         if (rowCards.size == 1) Spacer(Modifier.weight(1f))
@@ -320,76 +370,144 @@ private fun DashboardContent(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(appDimens().spacingLg)
                 ) {
                     PaymentMethodsChart(
                         breakdown = breakdown,
                         modifier = Modifier.weight(1f)
                     )
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(appDimens().spacing10),
                         modifier = Modifier.weight(1f)
                     ) {
-                        PaymentMethodLegendItem("UPI", breakdown.UPI, methodTotal, BrandBlue)
-                        PaymentMethodLegendItem("Cash", breakdown.CASH, methodTotal, BrandRed)
-                        PaymentMethodLegendItem("QR", breakdown.QR, methodTotal, androidx.compose.ui.graphics.Color(0xFF16A34A))
-                    }
-                }
-            }
-        }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    "Payment Pending Students",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                if (pending.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(BrandRedTint)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            pending.size.toString(),
-                            color = BrandRed,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelMedium
+                        val isDark = isDashboardDarkTheme()
+                        PaymentMethodLegendItem(
+                            "UPI",
+                            breakdown.UPI,
+                            methodTotal,
+                            if (isDark) appColors().accentBlue else MaterialTheme.colorScheme.primary
+                        )
+                        PaymentMethodLegendItem(
+                            "Cash",
+                            breakdown.CASH,
+                            methodTotal,
+                            if (isDark) appColors().accentRed else MaterialTheme.colorScheme.tertiary
+                        )
+                        PaymentMethodLegendItem(
+                            "QR",
+                            breakdown.QR,
+                            methodTotal,
+                            if (isDark) appColors().accentGreen else appColors().success
                         )
                     }
                 }
             }
         }
 
-        if (pending.isEmpty()) {
-            item {
-                Text(
-                    "No pending payments this month.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = OnSurfaceVariantLightColor
-                )
-            }
-        } else {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = BaseWhite),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Column {
-                        pending.forEachIndexed { index, student ->
-                            if (index > 0) {
-                                HorizontalDivider(color = OutlineVariantLight)
-                            }
-                            PendingStudentRow(student = student, onClick = { onOpenStudent(student.studentId) })
+        item {
+            PaymentPendingStudentsSection(
+                pending = pending,
+                onOpenStudent = onOpenStudent
+            )
+        }
+    }
+}
+
+@Composable
+private fun PaymentPendingStudentsSection(
+    pending: List<DashboardPendingStudent>,
+    onOpenStudent: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val studentLabel = if (pending.size == 1) "1 student" else "${pending.size} students"
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isDashboardDarkTheme()) {
+                    Modifier.border(appDimens().strokeHairline, appColors().outline, appDimens().statShape)
+                } else {
+                    Modifier
+                }
+            ),
+        shape = appDimens().statShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().spacingNone)
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (pending.isNotEmpty()) Modifier.clickable { expanded = !expanded }
+                        else Modifier
+                    )
+                    .padding(appDimens().spacingLg),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Payment Pending Students",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (pending.isEmpty()) {
+                            "No pending payments this month."
+                        } else {
+                            studentLabel
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (pending.isNotEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(
+                                    if (isDashboardDarkTheme()) appColors().accentRed.copy(alpha = 0.18f)
+                                    else MaterialTheme.colorScheme.tertiaryContainer
+                                )
+                                .padding(horizontal = appDimens().spacing10, vertical = appDimens().spacingXs)
+                        ) {
+                            Text(
+                                pending.size.toString(),
+                                color = if (isDashboardDarkTheme()) appColors().accentRed else MaterialTheme.colorScheme.tertiary,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium
+                            )
                         }
+                        Icon(
+                            imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                            contentDescription = if (expanded) "Collapse payment pending students" else "Expand payment pending students",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = expanded && pending.isNotEmpty(),
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    pending.forEachIndexed { index, student ->
+                        if (index > 0) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        }
+                        PendingStudentRow(
+                            student = student,
+                            onClick = { onOpenStudent(student.studentId) }
+                        )
                     }
                 }
             }
@@ -406,11 +524,11 @@ private fun PaymentMethodLegendItem(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
     ) {
         Box(
             modifier = Modifier
-                .size(10.dp)
+                .size(appDimens().spacing10)
                 .clip(CircleShape)
                 .background(color)
         )
@@ -431,9 +549,9 @@ private fun PendingStudentRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacing14),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
     ) {
         PhotoAvatar(name = student.fullName, size = 44)
         Column(modifier = Modifier.weight(1f)) {
@@ -441,48 +559,76 @@ private fun PendingStudentRow(
             Text(
                 Formatters.formatPhone(student.phoneNumber),
                 style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariantLightColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Text(
             "${Formatters.formatInr(student.totalPendingThisMonth)} due",
-            color = BrandRed,
+            color = if (isDashboardDarkTheme()) appColors().accentRed else MaterialTheme.colorScheme.tertiary,
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.bodyMedium
         )
     }
 }
 
-private val STAT_CARD_HEIGHT = 140.dp
 
 @Composable
 private fun StatCardView(card: StatCard, modifier: Modifier = Modifier) {
+    val isDark = isDashboardDarkTheme()
+    val iconTint = card.accent.iconTint()
+    val iconBackground = card.accent.iconBackground()
+    val containerColor = when {
+        isDark && card.highlighted -> MaterialTheme.colorScheme.surface
+        isDark -> MaterialTheme.colorScheme.surface
+        card.highlighted -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
+        else -> MaterialTheme.colorScheme.surface
+    }
+    val borderColor = when {
+        isDark && card.highlighted -> appColors().accentRed.copy(alpha = 0.55f)
+        isDark -> appColors().outline
+        else -> Color.Transparent
+    }
+    val valueColor = when {
+        card.highlighted && !isDark -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    val subtitleColor = when {
+        card.highlighted && isDark -> appColors().accentRed.copy(alpha = 0.75f)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (card.highlighted) BrandRedTint.copy(alpha = 0.35f) else BaseWhite
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (borderColor != Color.Transparent) {
+                    Modifier.border(appDimens().strokeHairline, borderColor, appDimens().statShape)
+                } else {
+                    Modifier
+                }
+            ),
+        shape = appDimens().statShape,
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().spacingNone)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(14.dp)
+                .padding(appDimens().spacing14)
         ) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .size(36.dp)
+                    .size(appDimens().iconSizeXxl)
                     .clip(CircleShape)
-                    .background(card.iconBackground),
+                    .background(iconBackground),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     card.icon,
                     contentDescription = null,
-                    tint = card.iconTint,
-                    modifier = Modifier.size(20.dp)
+                    tint = iconTint,
+                    modifier = Modifier.size(appDimens().iconSizeMd)
                 )
             }
 
@@ -490,18 +636,17 @@ private fun StatCardView(card: StatCard, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
-                    .padding(end = 40.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(end = appDimens().callButtonSize),
+                verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
             ) {
                 Text(
                     card.value,
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (card.highlighted) BrandRed else MaterialTheme.colorScheme.onSurface,
+                    color = valueColor,
                     softWrap = true,
-                    maxLines = 2,
-                    lineHeight = 24.sp
+                    maxLines = 2
                 )
                 Text(
                     card.title,
@@ -510,23 +655,21 @@ private fun StatCardView(card: StatCard, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium,
                     softWrap = true,
-                    maxLines = 2,
-                    lineHeight = 16.sp
+                    maxLines = 2
                 )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 28.dp)
+                        .heightIn(min = appDimens().spacing28)
                 ) {
                     if (card.subtitle != null) {
                         Text(
                             card.subtitle,
                             modifier = Modifier.fillMaxWidth(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = OnSurfaceVariantLightColor,
+                            color = subtitleColor,
                             softWrap = true,
-                            maxLines = 2,
-                            lineHeight = 14.sp
+                            maxLines = 2
                         )
                     }
                 }
@@ -542,21 +685,29 @@ private fun DashboardSectionCard(
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isDashboardDarkTheme()) {
+                    Modifier.border(appDimens().strokeHairline, appColors().outline, appDimens().statShape)
+                } else {
+                    Modifier
+                }
+            ),
+        shape = appDimens().statShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().spacingNone)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(appDimens().spacingLg)) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             if (subtitle != null) {
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariantLightColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
             content()
         }
     }

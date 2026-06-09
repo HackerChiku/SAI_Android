@@ -1,7 +1,11 @@
 package com.saicomputer.sms.feature.enrollments
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,19 +24,26 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -40,11 +51,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,6 +69,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -67,22 +81,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.CurrencyText
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
+import com.saicomputer.sms.core.ui.PaymentActionButtons
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusGray
-import com.saicomputer.sms.core.ui.theme.StatusRed
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.EnrollmentStatus
@@ -94,14 +100,8 @@ import com.saicomputer.sms.data.model.PaymentMethod
 import com.saicomputer.sms.data.model.PaymentStatus
 import com.saicomputer.sms.data.model.TopicDurationUnit
 import com.saicomputer.sms.data.model.TopicsSummary
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
-private val PillShape = RoundedCornerShape(50.dp)
-private val BackdateOrange = Color(0xFFEA580C)
-private val PaidRowTint = Color(0xFFD1FAE5)
-private val OverdueRowTint = Color(0xFFFEE2E2)
-private val PendingRowTint = Color(0xFFFFF7ED)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,13 +131,13 @@ fun EnrollmentDetailScreen(
 
     when (val s = state) {
         is UiState.Loading -> {
-            Column(Modifier.fillMaxSize().background(OffWhite)) {
+            Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 EnrollmentDetailHeader(title = topBarTitle, onBack = onBack)
                 LoadingSkeleton(Modifier.fillMaxSize())
             }
         }
         is UiState.Error -> {
-            Column(Modifier.fillMaxSize().background(OffWhite)) {
+            Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 EnrollmentDetailHeader(title = topBarTitle, onBack = onBack)
                 ErrorState(s.message, onRetry = viewModel::reload, modifier = Modifier.fillMaxSize())
             }
@@ -195,16 +195,17 @@ private fun EnrollmentDetailContent(
     } else 0
     val topicsPercent = e.topicsSummary?.progressPercent ?: 0
 
-    Column(modifier = Modifier.fillMaxSize().background(OffWhite)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         EnrollmentDetailHeader(title = topBarTitle, onBack = onBack)
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Box(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = appDimens().spacingSm),
+                verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
+            ) {
             EnrollmentSummaryCard(
                 enrollment = e,
                 feePercent = feePercent,
@@ -214,7 +215,7 @@ private fun EnrollmentDetailContent(
             if (e.enrollmentFeeWaived && e.waivedFromCourseName != null) {
                 EnrollmentFeeWaiverBanner(
                     waivedFromCourseName = e.waivedFromCourseName,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = appDimens().spacingLg)
                 )
             }
 
@@ -271,19 +272,26 @@ private fun EnrollmentDetailContent(
                     onToggle = { excluded -> viewModel.setExcluded(excluded, onMessage) }
                 )
             }
-        }
 
-        if (ongoing) {
-            EnrollmentActionBar(
-                canMarkComplete = canMarkComplete,
-                canCancel = canCancel,
-                onRecordPayment = onRecordPayment,
-                onMarkComplete = {
-                    incompleteTopics = emptyList()
-                    showMarkComplete = true
-                },
-                onCancel = { showCancel = true }
-            )
+                Spacer(Modifier.height(appDimens().fabScrollClearance))
+            }
+
+            if (ongoing) {
+                EnrollmentFloatingActions(
+                    canMarkComplete = canMarkComplete,
+                    canCancel = canCancel,
+                    onRecordPayment = onRecordPayment,
+                    onMarkComplete = {
+                        incompleteTopics = emptyList()
+                        showMarkComplete = true
+                    },
+                    onCancel = { showCancel = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(end = appDimens().spacingLg, bottom = appDimens().spacingLg)
+                )
+            }
         }
     }
 
@@ -337,25 +345,37 @@ private fun EnrollmentDetailContent(
 
 @Composable
 private fun EnrollmentDetailHeader(title: String, onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = BaseWhite)
+    AppTopBarBox {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(appDimens().iconSizeXxl)
+                    .clip(CircleShape)
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.size(appDimens().iconSizeListInner)
+                )
+            }
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.surface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
-        Text(
-            title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(end = 12.dp)
-        )
     }
 }
 
@@ -372,33 +392,33 @@ private fun EnrollmentSummaryCard(
         EnrollmentStatus.Cancelled -> "Cancelled"
     }
     val statusColor = when (enrollment.enrollmentStatus) {
-        EnrollmentStatus.Ongoing -> StatusEmerald
-        EnrollmentStatus.Completed -> StatusGray
-        EnrollmentStatus.Cancelled -> StatusRed
+        EnrollmentStatus.Ongoing -> appColors().success
+        EnrollmentStatus.Completed -> appColors().neutral
+        EnrollmentStatus.Cancelled -> appColors().error
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacing14)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ColoredPhotoAvatar(
                     name = enrollment.studentName ?: enrollment.courseName ?: "?",
                     size = 56
                 )
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
                     Text(
                         enrollment.studentName ?: "—",
                         style = MaterialTheme.typography.titleMedium,
@@ -409,18 +429,18 @@ private fun EnrollmentSummaryCard(
                     Text(
                         enrollment.courseFullName ?: enrollment.courseName ?: enrollment.courseId,
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariantLightColor,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Pill(statusLabel, statusColor, fontSize = 10.sp)
+                Pill(statusLabel, statusColor, style = MaterialTheme.typography.labelMedium)
             }
 
             BillingTypePills(selected = enrollment.billingType)
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
                     SummaryField("Start", Formatters.formatDateIst(enrollment.startDate), Modifier.weight(1f))
                     SummaryField(
                         "End / Expected",
@@ -428,7 +448,7 @@ private fun EnrollmentSummaryCard(
                         Modifier.weight(1f)
                     )
                 }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
                     SummaryField("Effective Fee", Formatters.formatInr(enrollment.effectiveFee), Modifier.weight(1f))
                     SummaryField(
                         "Enrollment Fee",
@@ -438,9 +458,9 @@ private fun EnrollmentSummaryCard(
                 }
             }
 
-            ProgressRow(label = "Fee paid", percent = feePercent, color = BrandBlue)
+            ProgressRow(label = "Fee paid", percent = feePercent, color = MaterialTheme.colorScheme.primary)
             if (enrollment.topicsSummary?.hasTopics == true || !enrollment.topics.isNullOrEmpty()) {
-                ProgressRow(label = "Topics completed", percent = topicsPercent, color = BrandRed)
+                ProgressRow(label = "Topics completed", percent = topicsPercent, color = MaterialTheme.colorScheme.tertiary)
             }
         }
     }
@@ -449,7 +469,7 @@ private fun EnrollmentSummaryCard(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BillingTypePills(selected: BillingType?) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
         BillingTypePill("Installment", selected == BillingType.Installment)
         BillingTypePill("Monthly", selected == BillingType.Subscription)
     }
@@ -459,42 +479,42 @@ private fun BillingTypePills(selected: BillingType?) {
 private fun BillingTypePill(label: String, active: Boolean) {
     Box(
         modifier = Modifier
-            .clip(PillShape)
-            .background(if (active) BrandBlueTint else BaseWhite)
+            .clip(appDimens().pillShape)
+            .background(if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
             .border(
-                width = 1.dp,
-                color = if (active) BrandBlue.copy(alpha = 0.35f) else OutlineVariantLight,
-                shape = PillShape
+                width = appDimens().strokeHairline,
+                color = if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f) else MaterialTheme.colorScheme.outlineVariant,
+                shape = appDimens().pillShape
             )
-            .padding(horizontal = 14.dp, vertical = 6.dp)
+            .padding(horizontal = appDimens().spacing14, vertical = appDimens().spacing6)
     ) {
         Text(
             label,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (active) BrandBlue else OnSurfaceVariantLightColor
+            color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
 private fun SummaryField(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariantLightColor)
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
 
 @Composable
 private fun ProgressRow(label: String, percent: Int, color: Color) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(label, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("$percent%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         }
         LinearProgressIndicator(
             progress = { percent / 100f },
-            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
+            modifier = Modifier.fillMaxWidth().height(appDimens().spacing6).clip(appDimens().pillShape),
             color = color,
             trackColor = color.copy(alpha = 0.15f)
         )
@@ -508,7 +528,7 @@ private fun InstallmentScheduleCard(
     onEdit: () -> Unit,
     onPay: () -> Unit
 ) {
-    DetailCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+    DetailCard(modifier = Modifier.padding(horizontal = appDimens().spacingLg)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -517,15 +537,15 @@ private fun InstallmentScheduleCard(
             Text("Installment Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             if (canEdit) {
                 TextButton(onClick = onEdit) {
-                    Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.size(4.dp))
-                    Text("Edit", color = BrandBlue, fontWeight = FontWeight.SemiBold)
+                    Icon(Icons.Outlined.Edit, contentDescription = null, modifier = Modifier.size(appDimens().spacingLg))
+                    Spacer(Modifier.size(appDimens().spacingXs))
+                    Text("Edit", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(appDimens().spacingSm))
         installments.forEachIndexed { index, installment ->
-            if (index > 0) Spacer(Modifier.height(8.dp))
+            if (index > 0) Spacer(Modifier.height(appDimens().spacingSm))
             InstallmentScheduleRow(installment = installment, onPay = onPay)
         }
     }
@@ -534,10 +554,10 @@ private fun InstallmentScheduleCard(
 @Composable
 private fun InstallmentScheduleRow(installment: Installment, onPay: () -> Unit) {
     val rowStyle = when (installment.status) {
-        InstallmentStatus.Paid -> InstallmentRowStyle(PaidRowTint, "Paid", StatusEmerald, false)
-        InstallmentStatus.Overdue -> InstallmentRowStyle(OverdueRowTint, "Overdue", StatusRed, true)
-        InstallmentStatus.Partial -> InstallmentRowStyle(PendingRowTint, "Partial", BackdateOrange, true)
-        InstallmentStatus.Unpaid -> InstallmentRowStyle(PendingRowTint, "Pending", BackdateOrange, true)
+        InstallmentStatus.Paid -> InstallmentRowStyle(appColors().rowPaid, "Paid", appColors().success, false)
+        InstallmentStatus.Overdue -> InstallmentRowStyle(appColors().rowOverdue, "Overdue", appColors().error, true)
+        InstallmentStatus.Partial -> InstallmentRowStyle(appColors().rowPending, "Partial", appColors().warning, true)
+        InstallmentStatus.Unpaid -> InstallmentRowStyle(appColors().rowPending, "Pending", appColors().warning, true)
     }
     val bg = rowStyle.background
     val statusLabel = rowStyle.statusLabel
@@ -547,13 +567,13 @@ private fun InstallmentScheduleRow(installment: Installment, onPay: () -> Unit) 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
+            .clip(appDimens().fieldShape)
             .background(bg)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = appDimens().spacingMd, vertical = appDimens().spacing10),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
             Text(
                 "#${installment.installmentNumber}",
                 style = MaterialTheme.typography.bodyMedium,
@@ -567,20 +587,20 @@ private fun InstallmentScheduleRow(installment: Installment, onPay: () -> Unit) 
             Text(
                 "Due: ${Formatters.formatDateIst(installment.dueDate)}",
                 style = MaterialTheme.typography.labelSmall,
-                color = OnSurfaceVariantLightColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Pill(statusLabel, statusColor, fontSize = 10.sp)
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
+            Pill(statusLabel, statusColor, style = MaterialTheme.typography.labelMedium)
             if (showPay) {
                 Button(
                     onClick = onPay,
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandRed, contentColor = BaseWhite),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.height(32.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(appDimens().spacingSm),
+                    modifier = Modifier.height(appDimens().spacing32),
                     contentPadding = ButtonDefaults.ContentPadding
                 ) {
-                    Text("Pay", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Pay", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -603,37 +623,71 @@ private fun TopicsCard(
     onMark: (EnrollmentTopic) -> Unit,
     onUnmark: (EnrollmentTopic) -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
+    val completedCount = summary?.completed ?: topics.count { it.isCompleted }
+    val totalCount = summary?.total ?: topics.size
     val percent = summary?.progressPercent
-        ?: if (topics.isNotEmpty()) topics.count { it.isCompleted } * 100 / topics.size else 0
+        ?: if (topics.isNotEmpty()) completedCount * 100 / topics.size else 0
 
-    DetailCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    DetailCard(modifier = Modifier.padding(horizontal = appDimens().spacingLg)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
         ) {
-            Text("Topics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("$percent%", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-        }
-        Spacer(Modifier.height(8.dp))
-        LinearProgressIndicator(
-            progress = { percent / 100f },
-            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)),
-            color = BrandBlue,
-            trackColor = BrandBlue.copy(alpha = 0.15f)
-        )
-        Spacer(Modifier.height(12.dp))
-        topics.forEachIndexed { index, topic ->
-            if (index > 0) {
-                HorizontalDivider(color = OutlineVariantLight, modifier = Modifier.padding(vertical = 10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Topics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "$completedCount of $totalCount completed",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
+                ) {
+                    Text("$percent%", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Icon(
+                        imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                        contentDescription = if (expanded) "Collapse topics" else "Expand topics",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            TopicListRow(
-                topic = topic,
-                canMark = canMark,
-                canUnmark = canUnmark,
-                onMark = { onMark(topic) },
-                onUnmark = { onUnmark(topic) }
+            Spacer(Modifier.height(appDimens().spacingSm))
+            LinearProgressIndicator(
+                progress = { percent / 100f },
+                modifier = Modifier.fillMaxWidth().height(appDimens().spacing6).clip(appDimens().pillShape),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
             )
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Column(modifier = Modifier.padding(top = appDimens().spacingMd)) {
+                topics.forEachIndexed { index, topic ->
+                    if (index > 0) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = appDimens().spacing10))
+                    }
+                    TopicListRow(
+                        topic = topic,
+                        canMark = canMark,
+                        canUnmark = canUnmark,
+                        onMark = { onMark(topic) },
+                        onUnmark = { onUnmark(topic) }
+                    )
+                }
+            }
         }
     }
 }
@@ -658,16 +712,16 @@ private fun TopicListRow(
                     else -> Modifier
                 }
             ),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10),
         verticalAlignment = Alignment.Top
     ) {
         Icon(
             imageVector = if (topic.isCompleted) Icons.Outlined.CheckBox else Icons.Outlined.CheckBoxOutlineBlank,
             contentDescription = null,
-            tint = if (topic.isCompleted) StatusEmerald else OnSurfaceVariantLightColor,
-            modifier = Modifier.size(22.dp)
+            tint = if (topic.isCompleted) appColors().success else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(appDimens().iconSizeListInner)
         )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)) {
             Text(
                 topic.topicName,
                 style = MaterialTheme.typography.bodyLarge,
@@ -675,15 +729,15 @@ private fun TopicListRow(
                 textDecoration = if (topic.isCompleted) TextDecoration.LineThrough else TextDecoration.None
             )
             topic.description?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Box(
                 modifier = Modifier
-                    .clip(PillShape)
-                    .background(OffWhite)
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                    .clip(appDimens().pillShape)
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(horizontal = appDimens().spacingSm, vertical = appDimens().cornerRadiusProgress)
             ) {
-                Text(durationLabel, style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariantLightColor)
+                Text(durationLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (topic.isCompleted) {
                 val completedLine = buildString {
@@ -695,7 +749,7 @@ private fun TopicListRow(
                 Text(
                     completedLine,
                     style = MaterialTheme.typography.labelSmall,
-                    color = StatusEmerald,
+                    color = appColors().success,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -710,14 +764,54 @@ private fun TopicDurationUnit.labelFor(value: Int): String = when (this) {
 
 @Composable
 private fun PaymentHistoryCard(payments: List<Payment>, onReceipt: (Payment) -> Unit) {
-    DetailCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Text("Payment History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
-        payments.forEachIndexed { index, payment ->
-            if (index > 0) {
-                HorizontalDivider(color = OutlineVariantLight, modifier = Modifier.padding(vertical = 10.dp))
+    var expanded by remember { mutableStateOf(false) }
+    val activePayments = payments.filter { it.status != PaymentStatus.Voided }
+    val totalPaid = activePayments.sumOf { it.amount }
+    val paymentLabel = if (payments.size == 1) "1 payment" else "${payments.size} payments"
+
+    DetailCard(modifier = Modifier.padding(horizontal = appDimens().spacingLg)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Payment History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "$paymentLabel · ${Formatters.formatInr(totalPaid)} total",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse payment history" else "Expand payment history",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            PaymentHistoryRow(payment = payment, onReceipt = { onReceipt(payment) })
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Column(modifier = Modifier.padding(top = appDimens().spacingMd)) {
+                payments.forEachIndexed { index, payment ->
+                    if (index > 0) {
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            modifier = Modifier.padding(vertical = appDimens().spacingXs)
+                        )
+                    }
+                    PaymentHistoryRow(payment = payment, onReceipt = { onReceipt(payment) })
+                }
+            }
         }
     }
 }
@@ -730,41 +824,44 @@ private fun PaymentHistoryRow(payment: Payment, onReceipt: () -> Unit) {
         else -> payment.paymentMethod.name
     }
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
     ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            CurrencyText(payment.amount, style = MaterialTheme.typography.titleMedium, bold = true)
-            Text(
-                "${Formatters.formatDateIst(payment.paymentDate)} · $methodLabel",
-                style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariantLightColor
-            )
-            Pill(
-                text = if (isVoided) "Voided" else "Paid",
-                color = if (isVoided) StatusRed else StatusEmerald,
-                fontSize = 10.sp
-            )
-        }
-        if (!payment.receiptId.isNullOrBlank()) {
-            TextButton(onClick = onReceipt) {
-                Text("Receipt", color = BrandBlue, fontWeight = FontWeight.SemiBold)
-            }
-        }
-    }
-}
-
-@Composable
-private fun BillingExclusionCard(excluded: Boolean, onToggle: (Boolean) -> Unit) {
-    DetailCard(modifier = Modifier.padding(horizontal = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            CurrencyText(payment.amount, style = MaterialTheme.typography.titleMedium, bold = true)
+            Pill(
+                text = if (isVoided) "Voided" else "Paid",
+                color = if (isVoided) appColors().error else appColors().success,
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
+        Text(
+            "${Formatters.formatDateIst(payment.paymentDate)} · $methodLabel",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+        PaymentActionButtons(
+            showReceipt = !payment.receiptId.isNullOrBlank(),
+            onViewReceipt = onReceipt
+        )
+    }
+}
+
+@Composable
+private fun BillingExclusionCard(excluded: Boolean, onToggle: (Boolean) -> Unit) {
+    DetailCard(modifier = Modifier.padding(horizontal = appDimens().spacingLg)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)) {
                 Text(
                     "Exclude from billing tracking",
                     style = MaterialTheme.typography.bodyLarge,
@@ -773,23 +870,74 @@ private fun BillingExclusionCard(excluded: Boolean, onToggle: (Boolean) -> Unit)
                 Text(
                     "This enrollment won't appear in pending reports",
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariantLightColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Switch(
                 checked = excluded,
                 onCheckedChange = onToggle,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = BaseWhite,
-                    checkedTrackColor = BrandRed
+                    checkedThumbColor = MaterialTheme.colorScheme.surface,
+                    checkedTrackColor = MaterialTheme.colorScheme.tertiary
                 )
             )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EnrollmentActionBar(
+private fun EnrollmentFloatingActions(
+    canMarkComplete: Boolean,
+    canCancel: Boolean,
+    onRecordPayment: () -> Unit,
+    onMarkComplete: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showActionsSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    Box(modifier = modifier) {
+        FloatingActionButton(
+            onClick = { showActionsSheet = true },
+            containerColor = MaterialTheme.colorScheme.tertiary,
+            contentColor = MaterialTheme.colorScheme.surface,
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = appDimens().spacingXs)
+        ) {
+            Icon(Icons.Outlined.Add, contentDescription = "Enrollment actions")
+        }
+    }
+
+    if (showActionsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showActionsSheet = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            EnrollmentActionsBottomSheet(
+                canMarkComplete = canMarkComplete,
+                canCancel = canCancel,
+                onRecordPayment = {
+                    showActionsSheet = false
+                    onRecordPayment()
+                },
+                onMarkComplete = {
+                    showActionsSheet = false
+                    onMarkComplete()
+                },
+                onCancel = {
+                    showActionsSheet = false
+                    onCancel()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun EnrollmentActionsBottomSheet(
     canMarkComplete: Boolean,
     canCancel: Boolean,
     onRecordPayment: () -> Unit,
@@ -799,48 +947,86 @@ private fun EnrollmentActionBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BaseWhite)
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(bottom = appDimens().spacingLg)
     ) {
-        Button(
-            onClick = onRecordPayment,
-            modifier = Modifier.fillMaxWidth(),
-            shape = FieldShape,
-            colors = ButtonDefaults.buttonColors(containerColor = BrandRed, contentColor = BaseWhite)
-        ) {
-            Icon(Icons.Outlined.CreditCard, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.size(8.dp))
-            Text("Record Payment", fontWeight = FontWeight.Bold)
-        }
+        Text(
+            text = "Enrollment actions",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = appDimens().iconSizeLg, vertical = appDimens().spacingSm)
+        )
+
+        EnrollmentActionSheetRow(
+            icon = Icons.Outlined.CreditCard,
+            label = "Record Payment",
+            onClick = onRecordPayment
+        )
+
         if (canMarkComplete) {
-            OutlinedButton(
-                onClick = onMarkComplete,
-                modifier = Modifier.fillMaxWidth(),
-                shape = FieldShape,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = BrandBlueTint,
-                    contentColor = BrandBlue
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, BrandBlue.copy(alpha = 0.35f))
-            ) {
-                Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(8.dp))
-                Text("Mark Complete", fontWeight = FontWeight.SemiBold)
-            }
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(horizontal = appDimens().iconSizeLg)
+            )
+            EnrollmentActionSheetRow(
+                icon = Icons.Outlined.CheckCircle,
+                label = "Mark Complete",
+                iconTint = MaterialTheme.colorScheme.primary,
+                onClick = onMarkComplete
+            )
         }
+
         if (canCancel) {
-            OutlinedButton(
-                onClick = onCancel,
-                modifier = Modifier.fillMaxWidth(),
-                shape = FieldShape,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandRed),
-                border = androidx.compose.foundation.BorderStroke(1.dp, BrandRed.copy(alpha = 0.6f))
-            ) {
-                Icon(Icons.Outlined.Cancel, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(8.dp))
-                Text("Cancel Enrollment", fontWeight = FontWeight.SemiBold)
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(horizontal = appDimens().iconSizeLg)
+            )
+            EnrollmentActionSheetRow(
+                icon = Icons.Outlined.Cancel,
+                label = "Cancel Enrollment",
+                onClick = onCancel
+            )
+        }
+    }
+}
+
+@Composable
+private fun EnrollmentActionSheetRow(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean = true,
+    subtitle: String? = null,
+    iconTint: Color = MaterialTheme.colorScheme.tertiary,
+    onClick: () -> Unit
+) {
+    val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = appDimens().iconSizeLg, vertical = appDimens().spacingLg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingLg)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (enabled) iconTint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.size(appDimens().iconSizeLg)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = contentColor
+            )
+            subtitle?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -853,10 +1039,10 @@ private fun DetailCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
-        Column(modifier = Modifier.padding(16.dp), content = content)
+        Column(modifier = Modifier.padding(appDimens().spacingLg), content = content)
     }
 }

@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.settings
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -54,21 +55,10 @@ import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.StatusBlue
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
 import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.data.model.UserRole
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
-private val WarningOrange = Color(0xFFEA580C)
-private val WarningOrangeTint = Color(0xFFFFF7ED)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +73,7 @@ fun UserManagementScreen(
     var editUser by remember { mutableStateOf<User?>(null) }
     var resetUserId by remember { mutableStateOf<String?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().background(OffWhite)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         SubpageTitleBar(title = "User Management", onBack = onBack, showProfile = false)
 
         when (val s = state) {
@@ -96,8 +86,8 @@ fun UserManagementScreen(
             is UiState.Success -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    contentPadding = PaddingValues(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+                    verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
                 ) {
                     item {
                         CreateUserButton(onClick = { showCreate = true })
@@ -130,7 +120,7 @@ fun UserManagementScreen(
             onDismissRequest = { showCreate = false },
             title = { Text("New User") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
@@ -151,7 +141,7 @@ fun UserManagementScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text("Role")
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                         UserRole.entries.forEach { r ->
                             FilterChip(
                                 selected = role == r,
@@ -171,7 +161,7 @@ fun UserManagementScreen(
                         }
                         showCreate = false
                     }
-                ) { Text("Create", color = BrandBlue) }
+                ) { Text("Create", color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = { TextButton(onClick = { showCreate = false }) { Text("Cancel") } }
         )
@@ -184,16 +174,16 @@ fun UserManagementScreen(
             onDismissRequest = { editUser = null },
             title = { Text("Edit User") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text("Full name") },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Text(user.email, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+                    Text(user.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Role")
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                         UserRole.entries.forEach { r ->
                             FilterChip(
                                 selected = role == r,
@@ -213,7 +203,7 @@ fun UserManagementScreen(
                         }
                         editUser = null
                     }
-                ) { Text("Save", color = BrandBlue) }
+                ) { Text("Save", color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = { TextButton(onClick = { editUser = null }) { Text("Cancel") } }
         )
@@ -242,7 +232,7 @@ fun UserManagementScreen(
                         }
                         resetUserId = null
                     }
-                ) { Text("Reset", color = BrandRed) }
+                ) { Text("Reset", color = MaterialTheme.colorScheme.tertiary) }
             },
             dismissButton = { TextButton(onClick = { resetUserId = null }) { Text("Cancel") } }
         )
@@ -254,17 +244,17 @@ private fun CreateUserButton(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .background(BrandBlueTint)
-            .border(1.dp, BrandBlue.copy(alpha = 0.35f), FieldShape)
+            .clip(appDimens().fieldShape)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), appDimens().fieldShape)
             .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
+            .padding(vertical = appDimens().spacing14),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Outlined.Add, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.size(6.dp))
-        Text("Create User", color = BrandBlue, fontWeight = FontWeight.SemiBold)
+        Icon(Icons.Outlined.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeSm))
+        Spacer(Modifier.size(appDimens().spacing6))
+        Text("Create User", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -276,13 +266,13 @@ private fun UserCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -291,7 +281,7 @@ private fun UserCard(
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
                 ) {
                     Text(
                         user.fullName,
@@ -303,7 +293,7 @@ private fun UserCard(
                     Text(
                         user.email,
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariantLightColor,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -311,7 +301,7 @@ private fun UserCard(
                 Pill(
                     text = user.role.name,
                     color = roleColor(user.role),
-                    fontSize = 10.sp
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
 
@@ -319,17 +309,17 @@ private fun UserCard(
                 MustChangePasswordBanner()
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingLg)) {
                 UserActionButton(
                     label = "Edit",
                     icon = Icons.Outlined.Edit,
-                    color = BrandBlue,
+                    color = MaterialTheme.colorScheme.primary,
                     onClick = onEdit
                 )
                 UserActionButton(
                     label = "Reset Password",
                     icon = Icons.Outlined.VpnKey,
-                    color = BrandRed,
+                    color = MaterialTheme.colorScheme.tertiary,
                     onClick = onResetPassword
                 )
             }
@@ -339,26 +329,27 @@ private fun UserCard(
 
 @Composable
 private fun MustChangePasswordBanner() {
+    val colors = appColors()
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .background(WarningOrangeTint)
-            .border(1.dp, WarningOrange.copy(alpha = 0.35f), FieldShape)
-            .padding(10.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .clip(appDimens().fieldShape)
+            .background(colors.warningContainer)
+            .border(appDimens().strokeHairline, colors.warning.copy(alpha = 0.35f), appDimens().fieldShape)
+            .padding(appDimens().spacing10),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             Icons.Outlined.WarningAmber,
             contentDescription = null,
-            tint = WarningOrange,
-            modifier = Modifier.size(18.dp)
+            tint = colors.warning,
+            modifier = Modifier.size(appDimens().iconSizeSm)
         )
         Text(
             "Must change password on next login.",
             style = MaterialTheme.typography.bodySmall,
-            color = WarningOrange,
+            color = colors.warning,
             fontWeight = FontWeight.Medium
         )
     }
@@ -372,14 +363,15 @@ private fun UserActionButton(
     onClick: () -> Unit
 ) {
     TextButton(onClick = onClick) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.size(4.dp))
-        Text(label, color = color, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(appDimens().iconSizeSm))
+        Spacer(Modifier.size(appDimens().spacingXs))
+        Text(label, color = color, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
     }
 }
 
+@Composable
 private fun roleColor(role: UserRole) = when (role) {
-    UserRole.Owner -> BrandRed
-    UserRole.Admin -> StatusBlue
-    UserRole.Receptionist -> StatusEmerald
+    UserRole.Owner -> MaterialTheme.colorScheme.tertiary
+    UserRole.Admin -> appColors().info
+    UserRole.Receptionist -> appColors().success
 }

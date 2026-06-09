@@ -34,13 +34,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saicomputer.sms.core.permission.can
+import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ProfileMenuButton
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 private data class MoreItem(
     val route: String,
@@ -71,7 +68,7 @@ fun MoreScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OffWhite)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             items(visible) { item ->
                 MoreMenuRow(
@@ -79,7 +76,7 @@ fun MoreScreen(
                     icon = item.icon,
                     onClick = { onNavigate(item.route) }
                 )
-                HorizontalDivider(color = OutlineVariantLight)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
             if (showUserManagement) {
                 item {
@@ -88,7 +85,7 @@ fun MoreScreen(
                         icon = Icons.Outlined.Assessment,
                         onClick = { onNavigate(Screen.Users.route) }
                     )
-                    HorizontalDivider(color = OutlineVariantLight)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
@@ -97,12 +94,12 @@ fun MoreScreen(
 
 @Composable
 private fun MoreHeader(user: User?) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 20.dp, vertical = 20.dp)
-    ) {
+    AppTopBarBox {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().iconSizeMd)
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -112,23 +109,24 @@ private fun MoreHeader(user: User?) {
                 "More",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = BaseWhite
+                color = MaterialTheme.colorScheme.surface
             )
-            ProfileMenuButton(user = user, size = 40.dp)
+            ProfileMenuButton(user = user, size = appDimens().callButtonSize)
         }
         Text(
             "Sai Computer Education",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = BaseWhite,
-            modifier = Modifier.padding(top = 16.dp)
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.padding(top = appDimens().spacingLg)
         )
         Text(
             "Student Management System",
             style = MaterialTheme.typography.bodyMedium,
-            color = BaseWhite.copy(alpha = 0.75f),
-            modifier = Modifier.padding(top = 4.dp)
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+            modifier = Modifier.padding(top = appDimens().spacingXs)
         )
+        }
     }
 }
 
@@ -138,23 +136,23 @@ private fun MoreMenuRow(
     icon: ImageVector,
     onClick: () -> Unit,
     labelColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
-    iconTint: androidx.compose.ui.graphics.Color = OnSurfaceVariantLightColor,
+    iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
     showChevron: Boolean = true
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BaseWhite)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
+            .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().iconSizeSm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingLg)
     ) {
         Icon(
             icon,
             contentDescription = null,
             tint = iconTint,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(appDimens().iconSizeLg)
         )
         Text(
             label,
@@ -167,8 +165,8 @@ private fun MoreMenuRow(
             Icon(
                 Icons.Outlined.ChevronRight,
                 contentDescription = null,
-                tint = OnSurfaceVariantLightColor,
-                modifier = Modifier.size(22.dp)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(appDimens().iconSizeListInner)
             )
         }
     }

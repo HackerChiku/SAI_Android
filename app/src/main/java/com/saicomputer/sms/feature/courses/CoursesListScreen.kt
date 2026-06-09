@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.courses
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,24 +48,11 @@ import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SubpageTitleBar
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
-import com.saicomputer.sms.core.ui.theme.StatusAmber
-import com.saicomputer.sms.core.ui.theme.StatusBlue
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusGray
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Course
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val IconShape = RoundedCornerShape(10.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
 
 @Composable
 fun CoursesListScreen(
@@ -88,10 +76,10 @@ fun CoursesListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OffWhite)
-                .padding(horizontal = 16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = appDimens().spacingLg)
         ) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
 
             when (val s = state) {
                 is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
@@ -111,8 +99,8 @@ fun CoursesListScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            contentPadding = PaddingValues(bottom = appDimens().spacingLg),
+                            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
                         ) {
                             items(s.data, key = { it.courseId }) { course ->
                                 CourseCard(
@@ -122,7 +110,7 @@ fun CoursesListScreen(
                             }
                             if (canCreate) {
                                 item {
-                                    Spacer(Modifier.height(4.dp))
+                                    Spacer(Modifier.height(appDimens().spacingXs))
                                     NewCourseButton(onClick = onNewCourse)
                                 }
                             }
@@ -149,17 +137,17 @@ private fun CoursesListHeader(
             if (canCreate) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(appDimens().iconSizeXxl)
                         .clip(CircleShape)
-                        .background(BrandRed)
+                        .background(MaterialTheme.colorScheme.tertiary)
                         .clickable(onClick = onNewCourse),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Outlined.Add,
                         contentDescription = "New course",
-                        tint = BaseWhite,
-                        modifier = Modifier.size(22.dp)
+                        tint = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier.size(appDimens().iconSizeListInner)
                     )
                 }
             }
@@ -179,31 +167,31 @@ private fun CourseCard(course: Course, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(IconShape)
-                        .background(BrandBlueTint),
+                        .size(appDimens().avatarSizeList)
+                        .clip(appDimens().iconShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.AutoMirrored.Outlined.MenuBook,
                         contentDescription = null,
-                        tint = BrandBlue,
-                        modifier = Modifier.size(22.dp)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(appDimens().iconSizeListInner)
                     )
                 }
                 Text(
@@ -220,28 +208,28 @@ private fun CourseCard(course: Course, onClick: () -> Unit) {
             Text(
                 course.courseFullName,
                 style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariantLightColor,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
                 Pill(
                     text = course.billingType.name,
-                    color = StatusBlue,
-                    fontSize = 10.sp
+                    color = appColors().info,
+                    style = MaterialTheme.typography.labelMedium
                 )
                 if (course.generateCertificate) {
-                    Pill(text = "Certificate", color = StatusEmerald, fontSize = 10.sp)
+                    Pill(text = "Certificate", color = appColors().success, style = MaterialTheme.typography.labelMedium)
                 }
                 if (course.hasTopics) {
                     val count = course.topicsCount ?: 0
                     val label = if (count == 1) "1 Topic" else "$count Topics"
-                    Pill(text = label, color = StatusAmber, fontSize = 10.sp)
+                    Pill(text = label, color = appColors().warning, style = MaterialTheme.typography.labelMedium)
                 }
             }
 
-            HorizontalDivider(color = OutlineVariantLight)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 CourseStatColumn(
@@ -267,16 +255,16 @@ private fun CourseCard(course: Course, onClick: () -> Unit) {
 
 @Composable
 private fun CourseStatusIndicator(isActive: Boolean) {
-    val color = if (isActive) StatusEmerald else StatusGray
+    val color = if (isActive) appColors().success else appColors().neutral
     val label = if (isActive) "Active" else "Inactive"
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacing5),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(7.dp)
+                .size(appDimens().iconDotSm)
                 .clip(CircleShape)
                 .background(color)
         )
@@ -284,8 +272,7 @@ private fun CourseStatusIndicator(isActive: Boolean) {
             label,
             color = color,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 11.sp
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
@@ -300,13 +287,12 @@ private fun CourseStatColumn(
     Column(
         modifier = modifier,
         horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.labelSmall,
-            color = OnSurfaceVariantLightColor,
-            fontSize = 10.sp
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             value,
@@ -322,24 +308,24 @@ private fun NewCourseButton(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .background(BrandBlueTint)
-            .border(1.dp, BrandBlue.copy(alpha = 0.35f), FieldShape)
+            .clip(appDimens().fieldShape)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), appDimens().fieldShape)
             .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
+            .padding(vertical = appDimens().spacing14),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             Icons.Outlined.Add,
             contentDescription = null,
-            tint = BrandBlue,
-            modifier = Modifier.size(18.dp)
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(appDimens().iconSizeSm)
         )
-        Spacer(Modifier.size(6.dp))
+        Spacer(Modifier.size(appDimens().spacing6))
         Text(
             "New Course",
-            color = BrandBlue,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodyLarge
         )

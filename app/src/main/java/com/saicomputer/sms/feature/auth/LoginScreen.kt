@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -47,16 +48,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.R
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineLight
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val FieldShape = RoundedCornerShape(12.dp)
-private val LogoShape = RoundedCornerShape(20.dp)
 
 @Composable
 fun LoginScreen(
@@ -67,56 +61,57 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = OutlineLight,
-        unfocusedBorderColor = OutlineVariantLight,
-        focusedContainerColor = BaseWhite,
-        unfocusedContainerColor = BaseWhite,
-        disabledContainerColor = BaseWhite,
+        focusedBorderColor = MaterialTheme.colorScheme.outline,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        disabledContainerColor = MaterialTheme.colorScheme.surface,
         focusedTextColor = MaterialTheme.colorScheme.onSurface,
         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-        focusedPlaceholderColor = OnSurfaceVariantLightColor,
-        unfocusedPlaceholderColor = OnSurfaceVariantLightColor
+        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BaseWhite)
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .navigationBarsPadding()
             .imePadding()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(3.dp)
-                .background(BrandRed)
+                .height(appDimens().cornerRadiusProgress)
+                .background(MaterialTheme.colorScheme.tertiary)
         )
 
         Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(horizontal = 28.dp),
+                .padding(horizontal = appDimens().spacing28),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             LoginLogo()
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(appDimens().iconSizeMd))
             Text(
                 "Sai Computer Education",
                 style = MaterialTheme.typography.headlineSmall,
-                color = BrandBlue,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(appDimens().spacing6))
             Text(
                 "Student Management System",
                 style = MaterialTheme.typography.bodyMedium,
-                color = OnSurfaceVariantLightColor,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-            Spacer(Modifier.height(36.dp))
+            Spacer(Modifier.height(appDimens().iconSizeXxl))
 
             LoginFieldLabel("Email")
             OutlinedTextField(
@@ -125,14 +120,14 @@ fun LoginScreen(
                 placeholder = { Text("you@saicomputer.in") },
                 singleLine = true,
                 enabled = !state.submitting,
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = fieldColors,
                 trailingIcon = {
                     Icon(
                         Icons.Outlined.Key,
                         contentDescription = null,
-                        tint = OnSurfaceVariantLightColor,
-                        modifier = Modifier.size(20.dp)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(appDimens().iconSizeMd)
                     )
                 },
                 keyboardOptions = KeyboardOptions(
@@ -142,7 +137,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(appDimens().iconSizeSm))
             LoginFieldLabel("Password")
             OutlinedTextField(
                 value = state.password,
@@ -150,7 +145,7 @@ fun LoginScreen(
                 placeholder = { Text("••••••••••") },
                 singleLine = true,
                 enabled = !state.submitting,
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = fieldColors,
                 visualTransformation = if (passwordVisible) {
                     VisualTransformation.None
@@ -166,8 +161,8 @@ fun LoginScreen(
                                 Icons.Outlined.Visibility
                             },
                             contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                            tint = OnSurfaceVariantLightColor,
-                            modifier = Modifier.size(20.dp)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(appDimens().iconSizeMd)
                         )
                     }
                 },
@@ -179,35 +174,35 @@ fun LoginScreen(
             )
 
             if (state.error != null) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(appDimens().spacingMd))
                 Text(
                     state.error.orEmpty(),
-                    color = BrandRed,
+                    color = MaterialTheme.colorScheme.tertiary,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(appDimens().spacing28))
             Button(
                 onClick = { viewModel.login(onLoggedIn) },
                 enabled = state.canSubmit,
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = BrandRed,
-                    contentColor = BaseWhite,
-                    disabledContainerColor = BrandRed.copy(alpha = 0.45f),
-                    disabledContentColor = BaseWhite.copy(alpha = 0.8f)
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.45f),
+                    disabledContentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .height(appDimens().iconSizeListBoxLg)
             ) {
                 if (state.submitting) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        strokeWidth = 2.dp,
-                        color = BaseWhite
+                        modifier = Modifier.size(appDimens().iconSizeListInner),
+                        strokeWidth = appDimens().spacingXxs,
+                        color = MaterialTheme.colorScheme.surface
                     )
                 } else {
                     Text(
@@ -222,11 +217,11 @@ fun LoginScreen(
         Text(
             "© 2026 Sai Computer Education",
             style = MaterialTheme.typography.labelSmall,
-            color = OnSurfaceVariantLightColor,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 20.dp)
+                .padding(bottom = appDimens().iconSizeMd)
         )
     }
 }
@@ -237,8 +232,8 @@ private fun LoginLogo() {
         painter = painterResource(R.drawable.sai_logo),
         contentDescription = "Sai Computer Education logo",
         modifier = Modifier
-            .size(120.dp)
-            .clip(LogoShape)
+            .size(appDimens().loginLogoSize)
+            .clip(appDimens().logoShape)
     )
 }
 
@@ -251,6 +246,6 @@ private fun LoginFieldLabel(text: String) {
         color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp)
+            .padding(bottom = appDimens().spacingSm)
     )
 }

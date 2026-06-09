@@ -17,13 +17,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.ListItemSurface
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.StatusAmber
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusRed
+import com.saicomputer.sms.core.ui.theme.appColors
 import com.saicomputer.sms.data.model.EmailStatus
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun ListItemCard(
@@ -36,8 +32,8 @@ fun ListItemCard(
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = ListItemSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        colors = CardDefaults.cardColors(containerColor = appColors().listItemSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         content()
     }
@@ -53,8 +49,8 @@ fun ListItemIconBox(
 ) {
     Box(
         modifier = modifier
-            .size(52.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .size(appDimens().iconSizeListBoxLg)
+            .clip(appDimens().cardShape)
             .background(containerColor),
         contentAlignment = Alignment.Center
     ) {
@@ -62,15 +58,19 @@ fun ListItemIconBox(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = tint,
-            modifier = Modifier.size(26.dp)
+            modifier = Modifier.size(appDimens().iconSizeXl)
         )
     }
 }
 
-fun emailStatusColor(status: EmailStatus): Color = when (status) {
-    EmailStatus.Sent -> StatusEmerald
-    EmailStatus.Queued -> StatusAmber
-    EmailStatus.Failed -> StatusRed
-    EmailStatus.NotSent -> BrandBlue
-    EmailStatus.NotApplicable -> OnSurfaceVariantLightColor
+@Composable
+fun emailStatusColor(status: EmailStatus): Color {
+    val colors = appColors()
+    return when (status) {
+        EmailStatus.Sent -> colors.success
+        EmailStatus.Queued -> colors.warning
+        EmailStatus.Failed -> colors.error
+        EmailStatus.NotSent -> MaterialTheme.colorScheme.primary
+        EmailStatus.NotApplicable -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
 }

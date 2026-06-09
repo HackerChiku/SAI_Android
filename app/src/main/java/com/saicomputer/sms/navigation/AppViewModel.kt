@@ -6,6 +6,7 @@ import com.saicomputer.sms.core.session.SessionManager
 import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.data.repo.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +39,8 @@ class AppViewModel @Inject constructor(
                 try {
                     val user = authRepository.me()
                     _bootstrap.value = BootstrapState(loading = false, user = user)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     session.clear()
                     _bootstrap.value = BootstrapState(loading = false, user = null)

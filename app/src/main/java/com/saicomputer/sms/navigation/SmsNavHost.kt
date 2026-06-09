@@ -7,11 +7,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.saicomputer.sms.core.ui.LoadingSkeleton
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,9 +60,7 @@ fun SmsNavHost(
     val currentRoute = navBackStackEntry?.destination?.route.orEmpty()
 
     if (bootstrap.loading) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        LoadingSkeleton(modifier = modifier.fillMaxSize())
         return
     }
 
@@ -142,6 +139,7 @@ fun SmsNavHost(
 
             composable(Screen.Profile.route) {
                 UserProfileScreen(
+                    user = currentUser,
                     onBack = { navController.popBackStack() },
                     onChangePassword = { navController.navigate(Screen.ChangePassword.route) }
                 )

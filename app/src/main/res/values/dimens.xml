@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing (Material 4dp grid + app intermediates) -->
+    <dimen name="spacing_none">0dp</dimen>
+    <dimen name="spacing_xxs">2dp</dimen>
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_5">5dp</dimen>
+    <dimen name="spacing_6">6dp</dimen>
+    <dimen name="spacing_7">7dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_10">10dp</dimen>
+    <dimen name="spacing_md">12dp</dimen>
+    <dimen name="spacing_14">14dp</dimen>
+    <dimen name="spacing_lg">16dp</dimen>
+    <dimen name="spacing_xl">20dp</dimen>
+    <dimen name="spacing_xxl">24dp</dimen>
+    <dimen name="spacing_28">28dp</dimen>
+    <dimen name="spacing_32">32dp</dimen>
+
+    <!-- Corner radii -->
+    <dimen name="corner_radius_extra_small">6dp</dimen>
+    <dimen name="corner_radius_small">10dp</dimen>
+    <dimen name="corner_radius_field">12dp</dimen>
+    <dimen name="corner_radius_card">14dp</dimen>
+    <dimen name="corner_radius_stat">16dp</dimen>
+    <dimen name="corner_radius_large">20dp</dimen>
+    <dimen name="corner_radius_extra_large">28dp</dimen>
+    <dimen name="corner_radius_pill">50dp</dimen>
+    <dimen name="corner_radius_progress">3dp</dimen>
+
+    <!-- Icons -->
+    <dimen name="icon_size_xs">16dp</dimen>
+    <dimen name="icon_size_sm">18dp</dimen>
+    <dimen name="icon_size_md">20dp</dimen>
+    <dimen name="icon_size_lg">24dp</dimen>
+    <dimen name="icon_size_xl">26dp</dimen>
+    <dimen name="icon_size_xxl">36dp</dimen>
+    <dimen name="icon_size_list_box">44dp</dimen>
+    <dimen name="icon_size_list_inner">22dp</dimen>
+    <dimen name="icon_size_list_box_lg">52dp</dimen>
+    <dimen name="icon_dot_sm">7dp</dimen>
+    <dimen name="icon_dot_md">10dp</dimen>
+
+    <!-- Avatars -->
+    <dimen name="avatar_size_list">44dp</dimen>
+    <dimen name="avatar_size_profile">88dp</dimen>
+    <dimen name="avatar_size_menu_sm">36dp</dimen>
+    <dimen name="avatar_size_menu_lg">40dp</dimen>
+    <dimen name="avatar_size_hero">96dp</dimen>
+    <dimen name="avatar_initials_divisor">2.6</dimen>
+
+    <!-- Navigation -->
+    <dimen name="bottom_nav_height">64dp</dimen>
+    <dimen name="bottom_nav_indicator_width">28dp</dimen>
+    <dimen name="bottom_nav_indicator_height">3dp</dimen>
+
+    <!-- Elevation / stroke -->
+    <dimen name="elevation_card">1dp</dimen>
+    <dimen name="elevation_fab">4dp</dimen>
+    <dimen name="stroke_hairline">1dp</dimen>
+    <dimen name="stroke_medium">2dp</dimen>
+    <dimen name="stroke_dashed">1.5dp</dimen>
+    <dimen name="divider_height">1dp</dimen>
+
+    <!-- Component heights / widths -->
+    <dimen name="fab_scroll_clearance">88dp</dimen>
+    <dimen name="chart_height_line">200dp</dimen>
+    <dimen name="chart_height_pie">160dp</dimen>
+    <dimen name="dropdown_menu_width">260dp</dimen>
+    <dimen name="login_logo_size">120dp</dimen>
+    <dimen name="stat_card_height">140dp</dimen>
+    <dimen name="dialog_max_height">480dp</dimen>
+    <dimen name="form_min_height">120dp</dimen>
+    <dimen name="column_width_narrow">100dp</dimen>
+    <dimen name="installment_index_width">36dp</dimen>
+    <dimen name="progress_bar_height">6dp</dimen>
+    <dimen name="tab_indicator_height">3dp</dimen>
+    <dimen name="badge_padding_h">10dp</dimen>
+    <dimen name="badge_padding_v">4dp</dimen>
+    <dimen name="call_button_size">40dp</dimen>
+    <dimen name="min_touch_height">28dp</dimen>
+    <dimen name="hero_stat_min_height">28dp</dimen>
+
+    <!-- Text sizes (Type.kt only) -->
+    <dimen name="text_size_headline_medium">28sp</dimen>
+    <dimen name="text_size_headline_medium_line">34sp</dimen>
+    <dimen name="text_size_headline_small">24sp</dimen>
+    <dimen name="text_size_headline_small_line">30sp</dimen>
+    <dimen name="text_size_title_large">22sp</dimen>
+    <dimen name="text_size_title_large_line">28sp</dimen>
+    <dimen name="text_size_title_medium">16sp</dimen>
+    <dimen name="text_size_title_medium_line">24sp</dimen>
+    <dimen name="text_size_title_small">14sp</dimen>
+    <dimen name="text_size_title_small_line">20sp</dimen>
+    <dimen name="text_size_body_large">16sp</dimen>
+    <dimen name="text_size_body_large_line">24sp</dimen>
+    <dimen name="text_size_body_medium">14sp</dimen>
+    <dimen name="text_size_body_medium_line">20sp</dimen>
+    <dimen name="text_size_label_large">14sp</dimen>
+    <dimen name="text_size_label_large_line">20sp</dimen>
+    <dimen name="text_size_label_medium">10sp</dimen>
+    <dimen name="text_size_label_medium_line">14sp</dimen>
+    <dimen name="text_size_label_small">11sp</dimen>
+    <dimen name="text_size_label_small_line">16sp</dimen>
+    <dimen name="text_size_label_tiny">9sp</dimen>
+    <dimen name="text_size_action">12sp</dimen>
+    <dimen name="text_size_action_compact">13sp</dimen>
+    <dimen name="text_size_bottom_nav">11sp</dimen>
+</resources>

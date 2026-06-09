@@ -1,5 +1,7 @@
 package com.saicomputer.sms.feature.enrollments
 
+import com.saicomputer.sms.core.ui.studentStatusColor
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +63,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -69,22 +72,10 @@ import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.ui.AmountField
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
+import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.DatePickerField
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
-import com.saicomputer.sms.core.ui.theme.StatusAmber
-import com.saicomputer.sms.core.ui.theme.StatusBlue
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusGray
-import com.saicomputer.sms.core.ui.theme.StatusRed
-import com.saicomputer.sms.core.ui.theme.StatusZinc
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Course
 import com.saicomputer.sms.data.model.InstallmentType
@@ -92,11 +83,8 @@ import com.saicomputer.sms.data.model.Student
 import com.saicomputer.sms.data.model.StudentStatus
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
-private val BackdateOrange = Color(0xFFEA580C)
-private val BackdateOrangeTint = Color(0xFFFFF7ED)
 
 private val STUDENT_STATUS_LABELS = mapOf(
     StudentStatus.New to "New",
@@ -106,16 +94,6 @@ private val STUDENT_STATUS_LABELS = mapOf(
     StudentStatus.Dropout to "Dropout",
     StudentStatus.NotTakenAdmission to "Not Admitted"
 )
-
-private val STUDENT_STATUS_COLORS = mapOf(
-    StudentStatus.New to StatusBlue,
-    StudentStatus.Active to StatusEmerald,
-    StudentStatus.PaymentPending to StatusAmber,
-    StudentStatus.Completed to StatusGray,
-    StudentStatus.Dropout to StatusRed,
-    StudentStatus.NotTakenAdmission to StatusZinc
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnrollmentWizardScreen(
@@ -146,14 +124,14 @@ fun EnrollmentWizardScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(OffWhite)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+                verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
             ) {
                 when (state.step) {
                     0 -> StudentStep(
@@ -210,18 +188,18 @@ private fun WizardHeader(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(horizontal = appDimens().spacingXs, vertical = appDimens().spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = BaseWhite)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.surface)
         }
         Text(
             "New Enrollment",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = BaseWhite
+            color = MaterialTheme.colorScheme.surface
         )
     }
 }
@@ -233,8 +211,8 @@ private fun WizardStepper(currentStep: Int, skipStudentStep: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BaseWhite)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
         verticalAlignment = Alignment.CenterVertically
     ) {
         steps.forEachIndexed { index, label ->
@@ -246,45 +224,45 @@ private fun WizardStepper(currentStep: Int, skipStudentStep: Boolean) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(2.dp)
-                        .padding(horizontal = 6.dp)
-                        .background(if (stepNumber <= currentStep) BrandBlue else OutlineVariantLight)
+                        .height(appDimens().spacingXxs)
+                        .padding(horizontal = appDimens().spacing6)
+                        .background(if (stepNumber <= currentStep) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
                 )
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(appDimens().spacing32)
                         .clip(CircleShape)
                         .background(
                             when {
-                                isCompleted -> BrandBlue
-                                isActive -> BrandRed
-                                else -> OutlineVariantLight
+                                isCompleted -> MaterialTheme.colorScheme.primary
+                                isActive -> MaterialTheme.colorScheme.tertiary
+                                else -> MaterialTheme.colorScheme.outlineVariant
                             }
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isCompleted) {
-                        Icon(Icons.Filled.Check, contentDescription = null, tint = BaseWhite, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(appDimens().iconSizeSm))
                     } else {
                         Text(
                             stepNumber.toString(),
-                            color = if (isActive) BaseWhite else OnSurfaceVariantLightColor,
+                            color = if (isActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            style = MaterialTheme.typography.titleSmall
                         )
                     }
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(appDimens().spacingXs))
                 Text(
                     label,
                     style = MaterialTheme.typography.labelSmall,
                     color = when {
-                        isActive -> BrandRed
-                        isCompleted -> BrandBlue
-                        else -> OnSurfaceVariantLightColor
+                        isActive -> MaterialTheme.colorScheme.tertiary
+                        isCompleted -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                     fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal
                 )
@@ -300,27 +278,25 @@ private fun StudentStep(
     onSelectStudent: (Student) -> Unit,
     onCreateStudent: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
         Text("Search student", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
         OutlinedTextField(
             value = state.studentSearch,
             onValueChange = onSearchChange,
             placeholder = { Text("Name, phone, or ID") },
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = BrandBlue,
-                unfocusedBorderColor = OutlineVariantLight,
-                focusedContainerColor = BaseWhite,
-                unfocusedContainerColor = BaseWhite
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
             ),
             singleLine = true
         )
 
         if (state.studentsLoading) {
-            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = BrandBlue)
-            }
+            LoadingSkeleton(modifier = Modifier.fillMaxWidth(), rows = 3)
         } else {
             state.students.forEach { student ->
                 val selected = state.studentId == student.studentId
@@ -335,9 +311,9 @@ private fun StudentStep(
         OutlinedButton(
             onClick = onCreateStudent,
             modifier = Modifier.fillMaxWidth(),
-            shape = FieldShape,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandBlue),
-            border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(BrandBlue))
+            shape = appDimens().fieldShape,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+            border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary))
         ) {
             Text("+ Create New Student", fontWeight = FontWeight.SemiBold)
         }
@@ -346,41 +322,41 @@ private fun StudentStep(
 
 @Composable
 private fun StudentSelectCard(student: Student, selected: Boolean, onClick: () -> Unit) {
-    val statusColor = STUDENT_STATUS_COLORS[student.status] ?: StatusGray
-    val bgColor = if (selected) BrandBlueTint else BaseWhite
-    val borderColor = if (selected) BrandBlue else OutlineVariantLight
+    val statusColor = studentStatusColor(student.status)
+    val bgColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = CardShape,
+        shape = appDimens().cardShape,
         colors = CardDefaults.cardColors(containerColor = bgColor),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+        border = androidx.compose.foundation.BorderStroke(appDimens().strokeHairline, borderColor)
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(appDimens().spacing14),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             ColoredPhotoAvatar(name = student.fullName, size = 44)
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
                 Text(student.fullName, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     "${student.studentId} · ${student.phoneNumber}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariantLightColor,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             if (selected) {
-                Icon(Icons.Filled.Check, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(22.dp))
+                Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeListInner))
             }
             Pill(
                 text = STUDENT_STATUS_LABELS[student.status] ?: student.status.name,
                 color = statusColor,
-                fontSize = 10.sp
+                style = MaterialTheme.typography.labelMedium
             )
         }
     }
@@ -393,9 +369,7 @@ private fun CourseStep(state: WizardState, onSelectCourse: (Course) -> Unit) {
     }
 
     if (state.coursesLoading) {
-        Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = BrandBlue)
-        }
+        LoadingSkeleton(modifier = Modifier.fillMaxWidth(), rows = 3)
     } else {
         state.courses.forEach { course ->
             CourseSelectCard(
@@ -409,26 +383,26 @@ private fun CourseStep(state: WizardState, onSelectCourse: (Course) -> Unit) {
 
 @Composable
 private fun StudentSummaryCard(student: Student) {
-    val statusColor = STUDENT_STATUS_COLORS[student.status] ?: StatusGray
+    val statusColor = studentStatusColor(student.status)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(appDimens().spacing14),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             ColoredPhotoAvatar(name = student.fullName, size = 44)
             Column(modifier = Modifier.weight(1f)) {
                 Text(student.fullName, fontWeight = FontWeight.Bold)
-                Text(student.studentId, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+                Text(student.studentId, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Pill(
                 text = STUDENT_STATUS_LABELS[student.status] ?: student.status.name,
                 color = statusColor,
-                fontSize = 10.sp
+                style = MaterialTheme.typography.labelMedium
             )
         }
     }
@@ -436,8 +410,8 @@ private fun StudentSummaryCard(student: Student) {
 
 @Composable
 private fun CourseSelectCard(course: Course, selected: Boolean, onClick: () -> Unit) {
-    val bgColor = if (selected) BrandBlueTint else BaseWhite
-    val borderColor = if (selected) BrandBlue else OutlineVariantLight
+    val bgColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
     val feeLabel = if (course.billingType == BillingType.Subscription) {
         Formatters.formatInr(course.monthlyFee) + "/mo"
     } else {
@@ -448,11 +422,11 @@ private fun CourseSelectCard(course: Course, selected: Boolean, onClick: () -> U
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = CardShape,
+        shape = appDimens().cardShape,
         colors = CardDefaults.cardColors(containerColor = bgColor),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+        border = androidx.compose.foundation.BorderStroke(appDimens().strokeHairline, borderColor)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -460,30 +434,30 @@ private fun CourseSelectCard(course: Course, selected: Boolean, onClick: () -> U
             ) {
                 Text(course.courseName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 if (selected) {
-                    Icon(Icons.Filled.Check, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeListInner))
                 }
             }
             Text(
                 "${course.courseFullName} · ${course.durationMonths} months",
                 style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariantLightColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
                 Pill(
                     text = if (course.billingType == BillingType.Subscription) "Subscription" else "Installment",
-                    color = StatusBlue,
-                    fontSize = 10.sp
+                    color = appColors().info,
+                    style = MaterialTheme.typography.labelMedium
                 )
-                Pill(text = "Fee: $feeLabel", color = StatusGray, fontSize = 10.sp)
+                Pill(text = "Fee: $feeLabel", color = appColors().neutral, style = MaterialTheme.typography.labelMedium)
                 if (course.generateCertificate) {
-                    Pill(text = "Certificate ✓", color = StatusEmerald, fontSize = 10.sp)
+                    Pill(text = "Certificate ✓", color = appColors().success, style = MaterialTheme.typography.labelMedium)
                 }
             }
             if (course.billingType == BillingType.Installment) {
                 Text(
                     "Up to ${course.maxInstallments} installments",
                     style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariantLightColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             if (course.hasTopics) {
@@ -491,17 +465,17 @@ private fun CourseSelectCard(course: Course, selected: Boolean, onClick: () -> U
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(FieldShape)
-                        .background(BrandBlueTint)
-                        .padding(10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .clip(appDimens().fieldShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .padding(appDimens().spacing10),
+                    horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm),
                     verticalAlignment = Alignment.Top
                 ) {
-                    Icon(Icons.Outlined.Info, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeSm))
                     Text(
                         "This course has $count topic${if (count == 1) "" else "s"} that will be copied as a checklist to the enrollment.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = BrandBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -530,10 +504,10 @@ private fun ScheduleStep(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
             Text(
                 if (isSubscription) "Schedule — Subscription" else "Schedule — Installment",
                 style = MaterialTheme.typography.titleMedium,
@@ -563,10 +537,10 @@ private fun ScheduleStep(
                         label = { Text("Installment type") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        shape = FieldShape,
+                        shape = appDimens().fieldShape,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = BrandBlue,
-                            unfocusedBorderColor = OutlineVariantLight
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                         )
                     )
                     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -588,9 +562,7 @@ private fun ScheduleStep(
 
     if (!isSubscription) {
         if (state.previewLoading) {
-            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = BrandBlue)
-            }
+            LoadingSkeleton(modifier = Modifier.fillMaxWidth(), rows = 3)
         } else {
             state.preview?.let { preview ->
                 if (preview.enrollmentFeeWaived && preview.waivedFromCourseName != null) {
@@ -622,35 +594,35 @@ private fun InstallmentSchedulePreview(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
             Text("Installment Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             rows.forEachIndexed { index, row ->
-                val bg = if (index % 2 == 0) OffWhite else BaseWhite
+                val bg = if (index % 2 == 0) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.surface
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(FieldShape)
+                        .clip(appDimens().fieldShape)
                         .background(bg)
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(horizontal = appDimens().spacingMd, vertical = appDimens().spacing10),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("${index + 1}", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(end = 8.dp))
+                    Text("${index + 1}", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(end = appDimens().spacingSm))
                     Text(Formatters.formatInr(row.amountDue), fontWeight = FontWeight.Medium)
                     Text(
                         relativeDueLabel(startDate, row.dueDate, index + 1),
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariantLightColor
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            HorizontalDivider(color = OutlineVariantLight)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total", fontWeight = FontWeight.SemiBold)
-                Text(Formatters.formatInr(total), fontWeight = FontWeight.Bold, color = BrandBlue)
+                Text(Formatters.formatInr(total), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -664,29 +636,29 @@ private fun CustomizeFeesSection(
     onUpdate: ((WizardState) -> WizardState) -> Unit,
     onScheduleChanged: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onUpdate { it.copy(customizeFeesExpanded = !it.customizeFeesExpanded) } }
-                .padding(vertical = 4.dp),
+                .padding(vertical = appDimens().spacingXs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacing6)
         ) {
             Icon(
                 if (state.customizeFeesExpanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
                 contentDescription = null,
-                tint = OnSurfaceVariantLightColor
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text("Customize Fees", fontWeight = FontWeight.SemiBold)
         }
         if (state.customizeFeesExpanded) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = CardShape,
-                colors = CardDefaults.cardColors(containerColor = BaseWhite)
+                shape = appDimens().cardShape,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
                     AmountField(
                         value = state.effectiveFee,
                         onValueChange = { v ->
@@ -699,7 +671,7 @@ private fun CustomizeFeesSection(
                     Text(
                         "Course default: ${Formatters.formatInr(if (isSubscription) course?.monthlyFee ?: 0 else course?.fee ?: 0)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariantLightColor
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     AmountField(
                         value = state.effectiveEnrollmentFee,
@@ -713,7 +685,7 @@ private fun CustomizeFeesSection(
                     Text(
                         "Course default: ${Formatters.formatInr(course?.enrollmentFee ?: 0)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariantLightColor
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -752,16 +724,16 @@ private fun WizardFooter(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BaseWhite)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
     ) {
         if (onSchedule || state.step > 0) {
             OutlinedButton(
                 onClick = onBack,
                 modifier = Modifier.weight(1f),
-                shape = FieldShape,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandBlue)
+                shape = appDimens().fieldShape,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Back", fontWeight = FontWeight.SemiBold)
             }
@@ -771,11 +743,11 @@ private fun WizardFooter(
                 onClick = onSubmit,
                 enabled = canSubmit && !state.submitting,
                 modifier = Modifier.weight(2f),
-                shape = FieldShape,
-                colors = ButtonDefaults.buttonColors(containerColor = BrandRed, contentColor = BaseWhite)
+                shape = appDimens().fieldShape,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.surface)
             ) {
                 if (state.submitting) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = BaseWhite, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(appDimens().iconSizeMd), color = MaterialTheme.colorScheme.surface, strokeWidth = appDimens().spacingXxs)
                 } else {
                     Text("Create Enrollment", fontWeight = FontWeight.SemiBold)
                 }
@@ -785,12 +757,12 @@ private fun WizardFooter(
                 onClick = onNext,
                 enabled = canNext,
                 modifier = Modifier.weight(if (state.step > 0) 2f else 1f),
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (canNext) BrandRed else OutlineVariantLight,
-                    contentColor = if (canNext) BaseWhite else OnSurfaceVariantLightColor,
-                    disabledContainerColor = OutlineVariantLight,
-                    disabledContentColor = OnSurfaceVariantLightColor
+                    containerColor = if (canNext) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outlineVariant,
+                    contentColor = if (canNext) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledContainerColor = MaterialTheme.colorScheme.outlineVariant,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             ) {
                 Text("Next", fontWeight = FontWeight.SemiBold)
@@ -810,32 +782,36 @@ private fun BackdateEntryCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .dashedBorder(BackdateOrange.copy(alpha = 0.65f))
-            .background(BackdateOrangeTint, FieldShape)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .dashedBorder(
+                appColors().warning.copy(alpha = 0.65f),
+                appDimens().strokeDashed,
+                appDimens().spacingMd
+            )
+            .background(appColors().warningContainer, appDimens().fieldShape)
+            .padding(appDimens().spacing14),
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
-            Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = BackdateOrange, modifier = Modifier.size(26.dp))
+            Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = appColors().warning, modifier = Modifier.size(appDimens().iconSizeXl))
             Text(
                 "Record as backdated entry",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = BackdateOrange,
+                color = appColors().warning,
                 modifier = Modifier.weight(1f)
             )
             Switch(
                 checked = enabled,
                 onCheckedChange = onEnabledChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = BaseWhite,
-                    checkedTrackColor = BackdateOrange,
-                    uncheckedThumbColor = BaseWhite,
-                    uncheckedTrackColor = OutlineVariantLight
+                    checkedThumbColor = MaterialTheme.colorScheme.surface,
+                    checkedTrackColor = appColors().warning,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.surface,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant
                 )
             )
         }
@@ -845,12 +821,12 @@ private fun BackdateEntryCard(
                 onValueChange = onDateChange,
                 label = "Entry date"
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-                Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = BackdateOrange, modifier = Modifier.size(18.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm), verticalAlignment = Alignment.Top) {
+                Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = appColors().warning, modifier = Modifier.size(appDimens().iconSizeSm))
                 Text(
                     "No confirmation email will be sent automatically. Receipt PDF will still be generated.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = BackdateOrange
+                    color = appColors().warning
                 )
             }
         }
@@ -866,7 +842,10 @@ private fun relativeDueLabel(startDate: String, dueDate: String, fallbackIndex: 
     return "Due: $months month(s)"
 }
 
-private fun Modifier.dashedBorder(color: Color): Modifier = drawBehind {
-    val stroke = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f)))
-    drawRoundRect(color = color, cornerRadius = CornerRadius(12.dp.toPx()), style = stroke)
+private fun Modifier.dashedBorder(color: Color, strokeWidth: Dp, cornerRadius: Dp): Modifier = drawBehind {
+    val stroke = Stroke(
+        width = strokeWidth.toPx(),
+        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f))
+    )
+    drawRoundRect(color = color, cornerRadius = CornerRadius(cornerRadius.toPx()), style = stroke)
 }

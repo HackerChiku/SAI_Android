@@ -61,21 +61,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.saicomputer.sms.core.ui.FormLoadingSkeleton
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineLight
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.PackageType
 import com.saicomputer.sms.data.model.TopicDurationUnit
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
 
 private val PACKAGE_LABELS = mapOf(
     PackageType.NONE to "None",
@@ -95,25 +87,23 @@ fun CourseFormScreen(
     LaunchedEffect(courseId) { viewModel.initialize(courseId) }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = OutlineLight,
-        unfocusedBorderColor = OutlineVariantLight,
-        focusedContainerColor = BaseWhite,
-        unfocusedContainerColor = BaseWhite,
-        disabledContainerColor = BaseWhite,
-        focusedPlaceholderColor = OnSurfaceVariantLightColor,
-        unfocusedPlaceholderColor = OnSurfaceVariantLightColor
+        focusedBorderColor = MaterialTheme.colorScheme.outline,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        disabledContainerColor = MaterialTheme.colorScheme.surface,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
-    Column(modifier = Modifier.fillMaxSize().background(OffWhite)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         CourseFormHeader(
             title = if (state.isEdit) "Edit Course" else "New Course",
             onBack = onBack
         )
 
         if (state.loading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            FormLoadingSkeleton(Modifier.fillMaxSize())
             return@Column
         }
 
@@ -121,8 +111,8 @@ fun CourseFormScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             FormSectionCard(title = "Course Info") {
                 FormTextField(
@@ -260,7 +250,7 @@ fun CourseFormScreen(
                 Text(state.error!!, color = MaterialTheme.colorScheme.error)
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(appDimens().spacingSm))
         }
 
         Button(
@@ -274,26 +264,26 @@ fun CourseFormScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            shape = FieldShape,
+                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+            shape = appDimens().fieldShape,
             colors = ButtonDefaults.buttonColors(
-                containerColor = BrandRed,
-                contentColor = BaseWhite,
-                disabledContainerColor = BrandRed.copy(alpha = 0.4f),
-                disabledContentColor = BaseWhite.copy(alpha = 0.7f)
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
+                disabledContentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
             )
         ) {
             if (state.submitting) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(22.dp),
-                    strokeWidth = 2.dp,
-                    color = BaseWhite
+                    modifier = Modifier.size(appDimens().iconSizeListInner),
+                    strokeWidth = appDimens().spacingXxs,
+                    color = MaterialTheme.colorScheme.surface
                 )
             } else {
                 Text(
                     if (state.isEdit) "Save Course" else "Create Course",
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    modifier = Modifier.padding(vertical = appDimens().spacingXs)
                 )
             }
         }
@@ -305,19 +295,19 @@ private fun CourseFormHeader(title: String, onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(horizontal = appDimens().spacingXs, vertical = appDimens().spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = BaseWhite)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.surface)
         }
         Text(
             title,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = BaseWhite,
-            modifier = Modifier.padding(start = 4.dp)
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.padding(start = appDimens().spacingXs)
         )
     }
 }
@@ -330,13 +320,13 @@ private fun FormSectionCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             content()
@@ -350,7 +340,7 @@ private fun FormLabel(label: String, required: Boolean = false) {
         buildAnnotatedString {
             append(label)
             if (required) {
-                withStyle(SpanStyle(color = BrandRed)) { append(" *") }
+                withStyle(SpanStyle(color = MaterialTheme.colorScheme.tertiary)) { append(" *") }
             }
         },
         style = MaterialTheme.typography.bodyMedium,
@@ -374,7 +364,7 @@ private fun FormTextField(
     helperText: String? = null,
     fieldColors: androidx.compose.material3.TextFieldColors
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel(label, required)
         OutlinedTextField(
             value = value,
@@ -384,7 +374,7 @@ private fun FormTextField(
             minLines = minLines,
             keyboardOptions = keyboardOptions,
             isError = isError,
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
         )
@@ -392,7 +382,7 @@ private fun FormTextField(
             isError && errorText != null ->
                 Text(errorText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             helperText != null ->
-                Text(helperText, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+                Text(helperText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -407,19 +397,19 @@ private fun FormNumberField(
     helperText: String? = null,
     fieldColors: androidx.compose.material3.TextFieldColors
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel(label, required)
         OutlinedTextField(
             value = if (value == 0) "" else value.toString(),
             onValueChange = { v -> onValueChange(v.filter { it.isDigit() }.toIntOrNull() ?: 0) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
         )
         helperText?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -431,7 +421,7 @@ private fun FormAmountField(
     onValueChange: (Int) -> Unit,
     fieldColors: androidx.compose.material3.TextFieldColors
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel(label)
         OutlinedTextField(
             value = if (value == 0) "" else value.toString(),
@@ -442,7 +432,7 @@ private fun FormAmountField(
             prefix = { Text("₹") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
         )
@@ -457,24 +447,24 @@ private fun BillingTypeSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .border(1.dp, OutlineVariantLight, FieldShape)
+            .clip(appDimens().fieldShape)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.outlineVariant, appDimens().fieldShape)
     ) {
         BillingType.entries.forEach { type ->
             val active = selected == type
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .background(if (active) BrandBlue else BaseWhite)
+                    .background(if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                     .clickable { onSelected(type) }
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = appDimens().spacingMd),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     type.name,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (active) BaseWhite else OnSurfaceVariantLightColor
+                    color = if (active) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -491,7 +481,7 @@ private fun PackageDropdown(
     var expanded by remember { mutableStateOf(false) }
     val display = PACKAGE_LABELS[selected] ?: selected.name
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel("Package")
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -503,9 +493,9 @@ private fun PackageDropdown(
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = {
-                    Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = OnSurfaceVariantLightColor)
+                    Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 },
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = fieldColors,
                 modifier = Modifier
                     .menuAnchor()
@@ -539,19 +529,19 @@ private fun OptionToggleRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = BaseWhite,
-                checkedTrackColor = BrandBlue,
-                uncheckedThumbColor = BaseWhite,
-                uncheckedTrackColor = OutlineVariantLight,
-                uncheckedBorderColor = OutlineLight
+                checkedThumbColor = MaterialTheme.colorScheme.surface,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.surface,
+                uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                uncheckedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
     }
@@ -562,18 +552,18 @@ private fun TopicsInfoBox() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .background(BrandBlueTint)
-            .border(1.dp, BrandBlue.copy(alpha = 0.25f), FieldShape)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .clip(appDimens().fieldShape)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), appDimens().fieldShape)
+            .padding(appDimens().spacingMd),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10),
         verticalAlignment = Alignment.Top
     ) {
-        Icon(Icons.Outlined.Info, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(20.dp))
+        Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeMd))
         Text(
             "Each topic is copied to new enrollments as a checklist.",
             style = MaterialTheme.typography.bodySmall,
-            color = BrandBlue
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -594,11 +584,11 @@ private fun TopicEditorCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .border(1.dp, OutlineVariantLight, FieldShape)
-            .background(OffWhite)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .clip(appDimens().fieldShape)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.outlineVariant, appDimens().fieldShape)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(appDimens().spacingMd),
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -610,8 +600,8 @@ private fun TopicEditorCard(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Outlined.Delete, contentDescription = "Remove topic", tint = BrandRed)
+            IconButton(onClick = onRemove, modifier = Modifier.size(appDimens().spacing32)) {
+                Icon(Icons.Outlined.Delete, contentDescription = "Remove topic", tint = MaterialTheme.colorScheme.tertiary)
             }
         }
         FormTextField(
@@ -634,16 +624,16 @@ private fun TopicEditorCard(
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
-            Column(modifier = Modifier.width(100.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(modifier = Modifier.width(appDimens().columnWidthNarrow), verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
                 FormLabel("Duration")
                 OutlinedTextField(
                     value = if (topic.durationValue == 0) "" else topic.durationValue.toString(),
                     onValueChange = onDurationChange,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    shape = FieldShape,
+                    shape = appDimens().fieldShape,
                     colors = fieldColors,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -668,7 +658,7 @@ private fun TopicUnitDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel("Unit")
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -680,9 +670,9 @@ private fun TopicUnitDropdown(
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = {
-                    Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = OnSurfaceVariantLightColor)
+                    Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 },
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = fieldColors,
                 modifier = Modifier
                     .menuAnchor()
@@ -709,16 +699,16 @@ private fun AddTopicButton(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .background(BaseWhite)
-            .border(1.dp, BrandBlue.copy(alpha = 0.35f), FieldShape)
+            .clip(appDimens().fieldShape)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), appDimens().fieldShape)
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = appDimens().spacingMd),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Outlined.Add, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.size(6.dp))
-        Text("+ Add Topic", color = BrandBlue, fontWeight = FontWeight.SemiBold)
+        Icon(Icons.Outlined.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeSm))
+        Spacer(Modifier.size(appDimens().spacing6))
+        Text("+ Add Topic", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
     }
 }

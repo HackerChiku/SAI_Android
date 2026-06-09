@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.certificates
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -53,16 +54,11 @@ import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.core.ui.ResendEmailDialog
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.emailStatusColor
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.StatusGray
 import com.saicomputer.sms.data.model.CertificateListItem
 import com.saicomputer.sms.data.model.EmailStatus
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
 
 @Composable
 fun CertificatesListScreen(
@@ -82,10 +78,10 @@ fun CertificatesListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OffWhite)
-                .padding(horizontal = 16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = appDimens().spacingLg)
         ) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
 
             when (val s = state) {
                 is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
@@ -100,8 +96,8 @@ fun CertificatesListScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            contentPadding = PaddingValues(bottom = appDimens().spacingLg),
+                            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
                         ) {
                             items(s.data, key = { it.certificateId }) { certificate ->
                                 CertificateCard(
@@ -160,13 +156,13 @@ private fun CertificateCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -176,13 +172,13 @@ private fun CertificateCard(
                 Text(
                     certificate.certificateId,
                     style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariantLightColor,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
                 Pill(
                     text = emailStatusLabel(certificate.emailStatus),
                     color = emailStatusPillColor(certificate.emailStatus),
-                    fontSize = 10.sp
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
 
@@ -210,7 +206,7 @@ private fun CertificateCard(
                 Text(
                     "Issued: ${Formatters.formatDateIst(certificate.issueDate)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariantLightColor,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
                 Row(horizontalArrangement = Arrangement.End) {
@@ -237,9 +233,9 @@ private fun ListActionButton(
     onClick: () -> Unit
 ) {
     TextButton(onClick = onClick) {
-        Icon(icon, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.size(4.dp))
-        Text(label, color = BrandBlue, fontWeight = FontWeight.SemiBold)
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeSm))
+        Spacer(Modifier.size(appDimens().spacingXs))
+        Text(label, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -249,7 +245,8 @@ private fun emailStatusLabel(status: EmailStatus): String = when (status) {
     else -> status.name
 }
 
+@Composable
 private fun emailStatusPillColor(status: EmailStatus) = when (status) {
-    EmailStatus.NotSent, EmailStatus.NotApplicable -> StatusGray
+    EmailStatus.NotSent, EmailStatus.NotApplicable -> appColors().neutral
     else -> emailStatusColor(status)
 }

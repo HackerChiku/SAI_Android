@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.payments
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -62,6 +63,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -69,18 +71,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
+import com.saicomputer.sms.core.ui.FormLoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineLight
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusRed
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.Installment
@@ -90,13 +83,8 @@ import com.saicomputer.sms.data.model.PaymentMethod
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
-private val BackdateOrange = Color(0xFFEA580C)
-private val BackdateOrangeTint = Color(0xFFFFF7ED)
-private val SelectedInstallmentTint = Color(0xFFE8EDF8)
-private val PaidRowTint = Color(0xFFF7F9FC)
 
 private val FORM_PAYMENT_METHODS = listOf(
     PaymentMethod.CASH,
@@ -120,21 +108,19 @@ fun PaymentFormScreen(
 
     val msg: (String) -> Unit = { snackbarController.show(scope, it) }
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = OutlineLight,
-        unfocusedBorderColor = OutlineVariantLight,
-        focusedContainerColor = BaseWhite,
-        unfocusedContainerColor = BaseWhite,
-        focusedPlaceholderColor = OnSurfaceVariantLightColor,
-        unfocusedPlaceholderColor = OnSurfaceVariantLightColor
+        focusedBorderColor = MaterialTheme.colorScheme.outline,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
-    Column(modifier = Modifier.fillMaxSize().background(OffWhite)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         PaymentFormHeader(onBack = onBack)
 
         if (state.loading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            FormLoadingSkeleton(Modifier.fillMaxSize())
             return@Column
         }
 
@@ -142,8 +128,8 @@ fun PaymentFormScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             state.enrollment?.let { enrollment ->
                 StudentPaymentSummaryCard(enrollment = enrollment)
@@ -200,22 +186,22 @@ fun PaymentFormScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            shape = FieldShape,
+                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+            shape = appDimens().fieldShape,
             colors = ButtonDefaults.buttonColors(
-                containerColor = BrandRed,
-                contentColor = BaseWhite,
-                disabledContainerColor = BrandRed.copy(alpha = 0.4f)
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
             )
         ) {
             if (state.submitting) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(22.dp),
-                    strokeWidth = 2.dp,
-                    color = BaseWhite
+                    modifier = Modifier.size(appDimens().iconSizeListInner),
+                    strokeWidth = appDimens().spacingXxs,
+                    color = MaterialTheme.colorScheme.surface
                 )
             } else {
-                Text("Record Payment", fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 4.dp))
+                Text("Record Payment", fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = appDimens().spacingXs))
             }
         }
     }
@@ -226,18 +212,18 @@ private fun PaymentFormHeader(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(horizontal = appDimens().spacingXs, vertical = appDimens().spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = BaseWhite)
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.surface)
         }
         Text(
             "Record Payment",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = BaseWhite
+            color = MaterialTheme.colorScheme.surface
         )
     }
 }
@@ -256,28 +242,28 @@ private fun StudentPaymentSummaryCard(enrollment: Enrollment) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacing14)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd), verticalAlignment = Alignment.CenterVertically) {
                 ColoredPhotoAvatar(name = enrollment.studentName ?: "?", size = 52)
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
                     Text(
                         enrollment.studentName ?: "—",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                PaymentStatColumn("Paid", enrollment.totalAmountPaid, StatusEmerald)
-                PaymentStatColumn("Due", enrollment.balance, StatusRed)
+                PaymentStatColumn("Paid", enrollment.totalAmountPaid, appColors().success)
+                PaymentStatColumn("Due", enrollment.balance, appColors().error)
                 PaymentStatColumn("Total", enrollment.totalAmountDue, MaterialTheme.colorScheme.onSurface)
             }
         }
@@ -286,8 +272,8 @@ private fun StudentPaymentSummaryCard(enrollment: Enrollment) {
 
 @Composable
 private fun PaymentStatColumn(label: String, amount: Int, valueColor: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariantLightColor)
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
             Formatters.formatInr(amount),
             style = MaterialTheme.typography.titleSmall,
@@ -305,14 +291,14 @@ private fun InstallmentPickerCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
             Text("Select Installment", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             if (installments.isEmpty()) {
-                Text("No installments found.", color = OnSurfaceVariantLightColor)
+                Text("No installments found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 installments.forEach { installment ->
                     InstallmentPickerRow(
@@ -334,39 +320,39 @@ private fun InstallmentPickerRow(
 ) {
     val isPaid = installment.status == InstallmentStatus.Paid
     val (statusLabel, statusColor) = when (installment.status) {
-        InstallmentStatus.Paid -> "Paid" to StatusEmerald
-        InstallmentStatus.Overdue -> "Overdue" to StatusRed
-        InstallmentStatus.Partial -> "Partial" to BackdateOrange
-        InstallmentStatus.Unpaid -> "Pending" to BackdateOrange
+        InstallmentStatus.Paid -> "Paid" to appColors().success
+        InstallmentStatus.Overdue -> "Overdue" to appColors().error
+        InstallmentStatus.Partial -> "Partial" to appColors().warning
+        InstallmentStatus.Unpaid -> "Pending" to appColors().warning
     }
     val rowBg = when {
-        selected -> SelectedInstallmentTint
-        isPaid -> PaidRowTint
-        else -> BaseWhite
+        selected -> appColors().rowSelected
+        isPaid -> appColors().rowPaid
+        else -> MaterialTheme.colorScheme.surface
     }
     val dotColor = when (installment.status) {
-        InstallmentStatus.Paid -> OnSurfaceVariantLightColor
-        InstallmentStatus.Overdue -> StatusRed
+        InstallmentStatus.Paid -> MaterialTheme.colorScheme.onSurfaceVariant
+        InstallmentStatus.Overdue -> appColors().error
         else -> Color.Black
     }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
+            .clip(appDimens().fieldShape)
             .background(rowBg)
             .border(
-                width = if (selected) 1.dp else 0.dp,
-                color = if (selected) BrandBlue.copy(alpha = 0.25f) else Color.Transparent,
-                shape = FieldShape
+                width = if (selected) appDimens().strokeHairline else appDimens().spacingNone,
+                color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else Color.Transparent,
+                shape = appDimens().fieldShape
             )
             .then(if (!isPaid) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(horizontal = appDimens().spacingMd, vertical = appDimens().spacing10),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10),
         verticalAlignment = Alignment.CenterVertically
     ) {
         InstallmentStatusDot(color = dotColor, highlighted = installment.status == InstallmentStatus.Overdue)
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
             Text(
                 "#${installment.installmentNumber} — ${Formatters.formatInr(installment.amountDue)}",
                 style = MaterialTheme.typography.bodyMedium,
@@ -375,10 +361,10 @@ private fun InstallmentPickerRow(
             Text(
                 "Due: ${Formatters.formatDateIst(installment.dueDate)}",
                 style = MaterialTheme.typography.labelSmall,
-                color = OnSurfaceVariantLightColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Pill(statusLabel, statusColor, fontSize = 10.sp)
+        Pill(statusLabel, statusColor, style = MaterialTheme.typography.labelMedium)
     }
 }
 
@@ -386,11 +372,11 @@ private fun InstallmentPickerRow(
 private fun InstallmentStatusDot(color: Color, highlighted: Boolean) {
     Box(
         modifier = Modifier
-            .size(if (highlighted) 14.dp else 10.dp)
+            .size(if (highlighted) appDimens().spacing14 else appDimens().spacing10)
             .clip(CircleShape)
             .background(if (highlighted) color.copy(alpha = 0.15f) else Color.Transparent)
             .border(
-                width = if (highlighted) 2.dp else 1.dp,
+                width = if (highlighted) appDimens().spacingXxs else appDimens().strokeHairline,
                 color = color,
                 shape = CircleShape
             ),
@@ -399,7 +385,7 @@ private fun InstallmentStatusDot(color: Color, highlighted: Boolean) {
         if (highlighted) {
             Box(
                 modifier = Modifier
-                    .size(6.dp)
+                    .size(appDimens().spacing6)
                     .clip(CircleShape)
                     .background(color)
             )
@@ -423,18 +409,18 @@ private fun PaymentDetailsCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacing14)) {
             FormAmountField(
                 amount = amount,
                 onAmountChange = onAmountChange,
                 fieldColors = fieldColors
             )
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                 FormLabel("Payment Method")
                 PaymentMethodSelector(
                     selected = method,
@@ -481,7 +467,7 @@ private fun FormAmountField(
     onAmountChange: (Int) -> Unit,
     fieldColors: androidx.compose.material3.TextFieldColors
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel("Amount (₹)")
         OutlinedTextField(
             value = if (amount == 0) "" else amount.toString(),
@@ -492,7 +478,7 @@ private fun FormAmountField(
             prefix = { Text("₹ ") },
             placeholder = { Text("1000") },
             singleLine = true,
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
@@ -500,7 +486,7 @@ private fun FormAmountField(
         Text(
             "Partial amounts allowed.",
             style = MaterialTheme.typography.bodySmall,
-            color = OnSurfaceVariantLightColor
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -512,29 +498,29 @@ private fun PaymentMethodSelector(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
     ) {
         FORM_PAYMENT_METHODS.forEach { method ->
             val active = selected == method
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(FieldShape)
-                    .background(if (active) BrandBlue else BaseWhite)
+                    .clip(appDimens().fieldShape)
+                    .background(if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                     .border(
-                        width = 1.dp,
-                        color = if (active) BrandBlue else OutlineVariantLight,
-                        shape = FieldShape
+                        width = appDimens().strokeHairline,
+                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                        shape = appDimens().fieldShape
                     )
                     .clickable { onSelected(method) }
-                    .padding(vertical = 10.dp),
+                    .padding(vertical = appDimens().spacing10),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     paymentMethodLabel(method),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (active) BaseWhite else MaterialTheme.colorScheme.onSurface
+                    color = if (active) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -546,14 +532,14 @@ private fun QrPaymentPanel() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .background(OffWhite)
-            .padding(vertical = 24.dp),
+            .clip(appDimens().fieldShape)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(vertical = appDimens().iconSizeLg),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(Icons.Outlined.QrCode2, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(48.dp))
-            Text("Institute Payment QR", style = MaterialTheme.typography.bodyMedium, color = BrandBlue)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
+            Icon(Icons.Outlined.QrCode2, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeListBox))
+            Text("Institute Payment QR", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -567,7 +553,7 @@ private fun PaymentDateField(
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel("Payment Date")
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
@@ -575,9 +561,9 @@ private fun PaymentDateField(
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = {
-                    Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = OnSurfaceVariantLightColor)
+                    Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 },
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = fieldColors,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -640,7 +626,7 @@ private fun FormTextField(
     singleLine: Boolean = true,
     minLines: Int = 1
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel(label)
         OutlinedTextField(
             value = value,
@@ -648,7 +634,7 @@ private fun FormTextField(
             placeholder = placeholder?.let { { Text(it) } },
             singleLine = singleLine,
             minLines = minLines,
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
         )
@@ -665,43 +651,47 @@ private fun BackdateEntryCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .dashedBorder(BackdateOrange.copy(alpha = 0.65f))
-            .background(BackdateOrangeTint, FieldShape)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .dashedBorder(
+                appColors().warning.copy(alpha = 0.65f),
+                appDimens().strokeDashed,
+                appDimens().spacingMd
+            )
+            .background(appColors().warningContainer, appDimens().fieldShape)
+            .padding(appDimens().spacing14),
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
-            Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = BackdateOrange, modifier = Modifier.size(26.dp))
+            Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = appColors().warning, modifier = Modifier.size(appDimens().iconSizeXl))
             Text(
                 "Record as backdated entry",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = BackdateOrange,
+                color = appColors().warning,
                 modifier = Modifier.weight(1f)
             )
             Switch(
                 checked = enabled,
                 onCheckedChange = onEnabledChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = BaseWhite,
-                    checkedTrackColor = BackdateOrange,
-                    uncheckedThumbColor = BaseWhite,
-                    uncheckedTrackColor = OutlineVariantLight
+                    checkedThumbColor = MaterialTheme.colorScheme.surface,
+                    checkedTrackColor = appColors().warning,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.surface,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant
                 )
             )
         }
         if (enabled) {
             BackdateDateField(value = date, onValueChange = onDateChange)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-                Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = BackdateOrange, modifier = Modifier.size(18.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm), verticalAlignment = Alignment.Top) {
+                Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = appColors().warning, modifier = Modifier.size(appDimens().iconSizeSm))
                 Text(
                     "No confirmation email will be sent automatically. Receipt PDF will still be generated.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = BackdateOrange
+                    color = appColors().warning
                 )
             }
         }
@@ -713,12 +703,12 @@ private fun BackdateEntryCard(
 private fun BackdateDateField(value: String?, onValueChange: (String) -> Unit) {
     var showPicker by remember { mutableStateOf(false) }
     val colors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = BackdateOrange,
-        unfocusedBorderColor = BackdateOrange.copy(alpha = 0.7f),
-        focusedContainerColor = BackdateOrangeTint,
-        unfocusedContainerColor = BackdateOrangeTint,
-        focusedTextColor = BackdateOrange,
-        unfocusedTextColor = BackdateOrange
+        focusedBorderColor = appColors().warning,
+        unfocusedBorderColor = appColors().warning.copy(alpha = 0.7f),
+        focusedContainerColor = appColors().warningContainer,
+        unfocusedContainerColor = appColors().warningContainer,
+        focusedTextColor = appColors().warning,
+        unfocusedTextColor = appColors().warning
     )
 
     Box(modifier = Modifier.fillMaxWidth()) {
@@ -726,7 +716,7 @@ private fun BackdateDateField(value: String?, onValueChange: (String) -> Unit) {
             value = formatPaymentDate(value),
             onValueChange = {},
             readOnly = true,
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = colors,
             modifier = Modifier.fillMaxWidth()
         )
@@ -783,11 +773,11 @@ private fun SubscriptionBillingCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
             Text("Billing Month", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             PaymentDateField(
                 value = if (billingMonth.isBlank()) "" else "$billingMonth-01",
@@ -823,13 +813,13 @@ private fun formatPaymentDate(iso: String?): String {
     }.getOrDefault("")
 }
 
-private fun Modifier.dashedBorder(color: Color): Modifier = drawBehind {
-    val strokeWidth = 1.5.dp.toPx()
+private fun Modifier.dashedBorder(color: Color, strokeWidth: Dp, cornerRadius: Dp): Modifier = drawBehind {
+    val strokeWidthPx = strokeWidth.toPx()
     val dash = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
-    val corner = 12.dp.toPx()
+    val corner = cornerRadius.toPx()
     drawRoundRect(
         color = color,
-        style = Stroke(width = strokeWidth, pathEffect = dash),
+        style = Stroke(width = strokeWidthPx, pathEffect = dash),
         cornerRadius = CornerRadius(corner, corner)
     )
 }

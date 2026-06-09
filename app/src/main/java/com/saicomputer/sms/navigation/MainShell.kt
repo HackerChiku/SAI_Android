@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,12 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.saicomputer.sms.core.permission.can
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
 import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.data.model.UserRole
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 private data class BottomNavItem(
     val route: String,
@@ -65,6 +64,7 @@ fun MainShell(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar && items.isNotEmpty()) {
                 BottomNavBar(
@@ -91,12 +91,12 @@ private fun BottomNavBar(
     currentRoute: String,
     onItemClick: (String) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth().background(BaseWhite)) {
+    Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
         HorizontalDividerCompat()
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp),
+                .height(appDimens().bottomNavHeight),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -120,31 +120,31 @@ private fun BottomNavItemView(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val color = if (selected) BrandRed else OnSurfaceVariantLightColor
+    val color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
+            .padding(vertical = appDimens().spacing6),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
     ) {
         Icon(
             item.icon,
             contentDescription = item.label,
             tint = color,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(appDimens().iconSizeLg)
         )
         Text(
             item.label,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             color = color
         )
         Box(
             modifier = Modifier
-                .size(width = 28.dp, height = 3.dp)
-                .background(if (selected) BrandRed else BaseWhite)
+                .size(width = appDimens().spacing28, height = appDimens().cornerRadiusProgress)
+                .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
         )
     }
 }
@@ -154,8 +154,8 @@ private fun HorizontalDividerCompat() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(1.dp)
-            .background(OutlineVariantLight)
+            .height(appDimens().strokeHairline)
+            .background(MaterialTheme.colorScheme.outlineVariant)
     )
 }
 

@@ -16,13 +16,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.saicomputer.sms.core.ui.theme.AppDimenSet
+import com.saicomputer.sms.core.ui.theme.appColors
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 /** Initials-only avatar; lists never fetch thumbnails. */
 @Composable
@@ -34,15 +36,6 @@ fun PhotoAvatar(
     ColoredPhotoAvatar(name = name, modifier = modifier, size = size)
 }
 
-private val AVATAR_PALETTES = listOf(
-    Pair(Color(0xFFDBEAFE), Color(0xFF1D4ED8)),
-    Pair(Color(0xFFEDE9FE), Color(0xFF6D28D9)),
-    Pair(Color(0xFFD1FAE5), Color(0xFF047857)),
-    Pair(Color(0xFFFFEDD5), Color(0xFFC2410C)),
-    Pair(Color(0xFFFCE7F3), Color(0xFFBE185D)),
-    Pair(Color(0xFFE0F2FE), Color(0xFF0369A1))
-)
-
 /** Avatar with pastel background color derived from the student's name. */
 @Composable
 fun ColoredPhotoAvatar(
@@ -50,9 +43,10 @@ fun ColoredPhotoAvatar(
     modifier: Modifier = Modifier,
     size: Int = 44
 ) {
+    val palettes = appColors().avatarPalettes
     val initials = remember(name) { initialsOf(name) }
-    val paletteIndex = remember(name) { kotlin.math.abs(name.hashCode()) % AVATAR_PALETTES.size }
-    val (background, foreground) = AVATAR_PALETTES[paletteIndex]
+    val paletteIndex = remember(name) { kotlin.math.abs(name.hashCode()) % palettes.size }
+    val (background, foreground) = palettes[paletteIndex]
 
     Box(
         modifier = modifier
@@ -65,7 +59,7 @@ fun ColoredPhotoAvatar(
             text = initials,
             color = foreground,
             fontWeight = FontWeight.SemiBold,
-            fontSize = (size / 2.6).sp
+            fontSize = (size / AppDimenSet.avatarInitialsDivisor).sp
         )
     }
 }
@@ -87,7 +81,7 @@ fun StudentPhotoAvatar(
             .size(size.dp)
             .clip(CircleShape)
             .border(
-                width = 2.dp,
+                width = appDimens().spacingXxs,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
                 shape = CircleShape
             )
@@ -122,7 +116,7 @@ private fun InitialsAvatar(
             text = initials,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             fontWeight = FontWeight.SemiBold,
-            fontSize = (size / 2.6).sp
+            fontSize = (size / AppDimenSet.avatarInitialsDivisor).sp
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.subscriptions
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,7 +29,7 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.GenericBadge
 import com.saicomputer.sms.core.ui.LoadingSkeleton
-import com.saicomputer.sms.core.ui.theme.StatusAmber
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,7 +41,7 @@ fun SubscriptionsListScreen(
     val pendingOnly by viewModel.pendingOnly.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize()) {
-            Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.padding(appDimens().spacingMd), horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                 FilterChip(
                     selected = pendingOnly,
                     onClick = { viewModel.togglePendingOnly() },
@@ -56,18 +57,18 @@ fun SubscriptionsListScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            contentPadding = PaddingValues(appDimens().spacingMd),
+                            verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
                         ) {
                             items(s.data) { sub ->
                                 Card(Modifier.fillMaxWidth().clickable { onOpenEnrollment(sub.enrollmentId) }) {
-                                    Column(Modifier.padding(12.dp)) {
+                                    Column(Modifier.padding(appDimens().spacingMd)) {
                                         Text(sub.studentName, fontWeight = FontWeight.SemiBold)
                                         Text(sub.courseName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text("${Formatters.formatInr(sub.monthlyFee)}/mo", style = MaterialTheme.typography.bodyMedium)
-                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                                             sub.paidThroughDate?.let { GenericBadge("Paid through ${Formatters.formatDateIst(it)}") }
-                                            if (sub.isPendingCurrentMonth) GenericBadge("Pending", StatusAmber)
+                                            if (sub.isPendingCurrentMonth) GenericBadge("Pending", appColors().warning)
                                         }
                                     }
                                 }

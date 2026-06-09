@@ -1,5 +1,7 @@
 package com.saicomputer.sms.feature.students
 
+import com.saicomputer.sms.core.ui.studentStatusColor
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +29,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -60,31 +61,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
+import com.saicomputer.sms.core.ui.ShimmerPagingRow
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.ProfileMenuButton
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineLight
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
-import com.saicomputer.sms.core.ui.theme.StatusAmber
-import com.saicomputer.sms.core.ui.theme.StatusBlue
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusGray
-import com.saicomputer.sms.core.ui.theme.StatusPurple
-import com.saicomputer.sms.core.ui.theme.StatusRed
-import com.saicomputer.sms.core.ui.theme.StatusZinc
 import com.saicomputer.sms.data.model.RegistrationSession
 import com.saicomputer.sms.data.model.Student
 import com.saicomputer.sms.data.model.StudentStatus
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 private val STATUS_OPTIONS = listOf("All", "Active", "PaymentPending", "Completed", "New", "Dropout", "NotTakenAdmission")
 private val SESSION_OPTIONS = listOf("All", "Before2017", "After2017", "NewRecord")
@@ -113,18 +102,6 @@ private val STATUS_LIST_LABELS = mapOf(
     StudentStatus.NotTakenAdmission to "Not Admitted"
 )
 
-private val STATUS_LIST_COLORS = mapOf(
-    StudentStatus.New to StatusBlue,
-    StudentStatus.Active to StatusEmerald,
-    StudentStatus.PaymentPending to StatusAmber,
-    StudentStatus.Completed to StatusGray,
-    StudentStatus.Dropout to StatusRed,
-    StudentStatus.NotTakenAdmission to StatusZinc
-)
-
-private val FieldShape = RoundedCornerShape(12.dp)
-private val CardShape = RoundedCornerShape(14.dp)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentsListScreen(
@@ -149,13 +126,13 @@ fun StudentsListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OffWhite)
-                .padding(horizontal = 16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = appDimens().spacingLg)
         ) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
@@ -163,12 +140,12 @@ fun StudentsListScreen(
                     onValueChange = viewModel::onSearchChange,
                     placeholder = { Text("Search by name, phone, or ID") },
                     singleLine = true,
-                    shape = FieldShape,
+                    shape = appDimens().fieldShape,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = BaseWhite,
-                        unfocusedContainerColor = BaseWhite,
-                        focusedBorderColor = OutlineLight,
-                        unfocusedBorderColor = OutlineVariantLight
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions.Default,
@@ -180,24 +157,24 @@ fun StudentsListScreen(
                     IconButton(
                         onClick = { showFilterDialog = true },
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(FieldShape)
-                            .background(if (hasActiveFilters) BrandBlueTint else BaseWhite)
+                            .size(appDimens().iconSizeListBox)
+                            .clip(appDimens().fieldShape)
+                            .background(if (hasActiveFilters) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
                     ) {
                         Icon(
                             Icons.Outlined.FilterList,
                             contentDescription = "Filters",
-                            tint = if (hasActiveFilters) BrandBlue else OnSurfaceVariantLightColor
+                            tint = if (hasActiveFilters) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     if (hasActiveFilters) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(10.dp)
-                                .size(8.dp)
+                                .padding(appDimens().spacing10)
+                                .size(appDimens().spacingSm)
                                 .clip(CircleShape)
-                                .background(BrandRed)
+                                .background(MaterialTheme.colorScheme.tertiary)
                         )
                     }
                 }
@@ -217,7 +194,7 @@ fun StudentsListScreen(
                 )
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
 
             val refreshState = students.loadState.refresh
             when {
@@ -254,8 +231,8 @@ fun StudentsListScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        contentPadding = PaddingValues(bottom = appDimens().spacingLg),
+                        verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
                     ) {
                         items(
                             count = students.itemCount,
@@ -268,12 +245,7 @@ fun StudentsListScreen(
                         }
                         if (students.loadState.append is LoadState.Loading) {
                             item {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                                }
+                                ShimmerPagingRow()
                             }
                         }
                     }
@@ -289,48 +261,55 @@ private fun StudentsListHeader(
     onSearchClick: () -> Unit,
     onNewStudent: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "Students",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite
-        )
+    AppTopBarBox {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onSearchClick) {
-                Icon(
-                    Icons.Outlined.Search,
-                    contentDescription = "Search",
-                    tint = BaseWhite,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(BrandRed)
-                    .clickable(onClick = onNewStudent),
-                contentAlignment = Alignment.Center
+            Text(
+                "Students",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.surface
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Outlined.Add,
-                    contentDescription = "New student",
-                    tint = BaseWhite,
-                    modifier = Modifier.size(22.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(appDimens().iconSizeXxl)
+                        .clip(CircleShape)
+                        .clickable(onClick = onSearchClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier.size(appDimens().iconSizeListInner)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(appDimens().iconSizeXxl)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.tertiary)
+                        .clickable(onClick = onNewStudent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.Add,
+                        contentDescription = "New student",
+                        tint = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier.size(appDimens().iconSizeListInner)
+                    )
+                }
+                ProfileMenuButton(user = user)
             }
-            ProfileMenuButton(user = user)
         }
     }
 }
@@ -347,12 +326,12 @@ private fun StudentsFilterDialog(
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = BaseWhite)
+            shape = appDimens().statShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.padding(appDimens().iconSizeMd),
+                verticalArrangement = Arrangement.spacedBy(appDimens().spacing14)
             ) {
                 Text(
                     "Filters",
@@ -377,21 +356,21 @@ private fun StudentsFilterDialog(
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10)
                 ) {
                     TextButton(
                         onClick = onClear,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Clear", color = BrandBlue)
+                        Text("Clear", color = MaterialTheme.colorScheme.primary)
                     }
                     Button(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
-                        shape = FieldShape,
+                        shape = appDimens().fieldShape,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = BrandRed,
-                            contentColor = BaseWhite
+                            containerColor = MaterialTheme.colorScheme.tertiary,
+                            contentColor = MaterialTheme.colorScheme.surface
                         )
                     ) {
                         Text("Apply", fontWeight = FontWeight.SemiBold)
@@ -424,15 +403,15 @@ private fun FilterDropdown(
             onValueChange = {},
             readOnly = true,
             trailingIcon = {
-                Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = OnSurfaceVariantLightColor)
+                Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             },
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = BaseWhite,
-                unfocusedContainerColor = BaseWhite,
-                focusedBorderColor = OutlineLight,
-                unfocusedBorderColor = OutlineVariantLight,
-                disabledContainerColor = BaseWhite
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.outline,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                disabledContainerColor = MaterialTheme.colorScheme.surface
             ),
             modifier = Modifier
                 .menuAnchor()
@@ -463,21 +442,21 @@ private fun StudentRow(student: Student, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(appDimens().spacing14),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacing14)
         ) {
             ColoredPhotoAvatar(name = student.fullName, size = 48)
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
             ) {
                 Text(
                     student.fullName,
@@ -489,24 +468,24 @@ private fun StudentRow(student: Student, onClick: () -> Unit) {
                 Text(
                     student.studentId,
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariantLightColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
             ) {
-                val statusColor = STATUS_LIST_COLORS[student.status] ?: StatusGray
+                val statusColor = studentStatusColor(student.status)
                 Pill(
                     text = STATUS_LIST_LABELS[student.status] ?: student.status.name,
                     color = statusColor,
-                    fontSize = 10.sp
+                    style = MaterialTheme.typography.labelMedium
                 )
                 when (student.registrationSession) {
                     RegistrationSession.Before2017 ->
-                        Pill("Before 2017", StatusPurple, fontSize = 10.sp)
+                        Pill("Before 2017", appColors().purple, style = MaterialTheme.typography.labelMedium)
                     RegistrationSession.After2017 ->
-                        Pill("After 2017", StatusBlue, fontSize = 10.sp)
+                        Pill("After 2017", appColors().info, style = MaterialTheme.typography.labelMedium)
                     RegistrationSession.NewRecord -> Unit
                 }
             }

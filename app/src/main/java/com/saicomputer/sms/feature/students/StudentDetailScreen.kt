@@ -1,5 +1,7 @@
 package com.saicomputer.sms.feature.students
 
+import com.saicomputer.sms.core.ui.studentStatusColor
+import com.saicomputer.sms.core.ui.theme.appColors
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,31 +22,38 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.PersonOff
+import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
@@ -53,6 +62,8 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -66,14 +77,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -81,27 +92,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.CrossfadeUiState
 import com.saicomputer.sms.core.ui.CurrencyText
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.GenericBadge
 import com.saicomputer.sms.core.ui.LoadingSkeleton
+import com.saicomputer.sms.core.ui.ThemedShimmerCircle
+import com.saicomputer.sms.core.ui.PaymentActionButtons
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.StatusBadge
 import com.saicomputer.sms.core.ui.StudentPhotoAvatar
 import com.saicomputer.sms.core.ui.rememberBase64ImageBitmap
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusGray
-import com.saicomputer.sms.core.ui.theme.StatusRed
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.EnrollmentStatus
@@ -111,12 +114,20 @@ import com.saicomputer.sms.data.model.PaymentMethod
 import com.saicomputer.sms.data.model.PaymentStatus
 import com.saicomputer.sms.data.model.RegistrationSession
 import com.saicomputer.sms.data.model.Student
+import com.saicomputer.sms.data.model.StudentStatus
 import com.saicomputer.sms.data.model.TERMINAL_STUDENT_STATUSES
 import kotlinx.coroutines.CoroutineScope
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
 
+private val HERO_STATUS_LABELS = mapOf(
+    StudentStatus.New to "New",
+    StudentStatus.Active to "Active",
+    StudentStatus.PaymentPending to "Pmt Pending",
+    StudentStatus.Completed to "Completed",
+    StudentStatus.Dropout to "Dropout",
+    StudentStatus.NotTakenAdmission to "Not Admitted"
+)
 private val GENDER_LABELS = mapOf(
     Gender.Male to "Male",
     Gender.Female to "Female",
@@ -146,13 +157,13 @@ fun StudentDetailScreen(
     CrossfadeUiState(
         state = state,
         loading = {
-            Column(Modifier.fillMaxSize().background(OffWhite)) {
+            Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 StudentDetailHeader(title = "Student", onBack = onBack, onEdit = null)
                 LoadingSkeleton(modifier = Modifier.fillMaxSize())
             }
         },
         error = { message ->
-            Column(Modifier.fillMaxSize().background(OffWhite)) {
+            Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 StudentDetailHeader(title = "Student", onBack = onBack, onEdit = null)
                 ErrorState(message = message, onRetry = viewModel::reload, modifier = Modifier.fillMaxSize())
             }
@@ -207,6 +218,7 @@ private fun StudentDetailContent(
 
     val tabs = listOf("Profile", "Enrollments", "Payments", "Documents")
     val isTerminal = student.status in TERMINAL_STUDENT_STATUSES
+    val showReactivate = canChangeStatus && student.status == StudentStatus.NotTakenAdmission
     val hasEnrollments = enrollments.isNotEmpty()
     val ongoingEnrollment = enrollments.firstOrNull { it.enrollmentStatus == EnrollmentStatus.Ongoing }
     val photoState by documentsViewModel.photo.collectAsStateWithLifecycle()
@@ -234,36 +246,41 @@ private fun StudentDetailContent(
         onDispose { documentsViewModel.clearPhoto() }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(OffWhite)) {
-        StudentDetailHeader(
-            title = student.fullName,
-            onBack = onBack,
-            onEdit = if (canEdit) onEdit else null
-        )
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            StudentDetailHeader(
+                title = student.fullName,
+                onBack = onBack,
+                onEdit = if (canEdit) onEdit else null
+            )
 
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+            val activePayments = payments.filter { it.status != PaymentStatus.Voided }
             StudentHeroCard(
                 student = student,
                 photoBase64 = photoState.file?.base64,
-                photoLoading = photoState.loading
+                photoLoading = photoState.loading,
+                enrollmentCount = enrollments.size,
+                paymentCount = activePayments.size,
+                totalPaid = activePayments.sumOf { it.amount }
             )
 
             ScrollableTabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = BaseWhite,
-                contentColor = BrandBlue,
-                edgePadding = 16.dp,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                edgePadding = appDimens().spacingLg,
                 divider = {},
                 indicator = { positions ->
                     if (selectedTab < positions.size) {
                         TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(positions[selectedTab]),
-                            height = 3.dp,
-                            color = BrandRed
+                            height = appDimens().cornerRadiusProgress,
+                            color = MaterialTheme.colorScheme.tertiary
                         )
                     }
                 }
@@ -280,7 +297,7 @@ private fun StudentDetailContent(
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = if (selectedTab == index) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (selectedTab == index) BrandRed else OnSurfaceVariantLightColor
+                                color = if (selectedTab == index) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     )
@@ -288,8 +305,8 @@ private fun StudentDetailContent(
             }
 
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.padding(appDimens().spacingLg),
+                verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
             ) {
                 when (selectedTab) {
                     0 -> ProfileTab(student)
@@ -327,14 +344,18 @@ private fun StudentDetailContent(
                         onViewAadhaar = { showAadhaar = true }
                     )
                 }
+                Spacer(Modifier.height(appDimens().fabScrollClearance))
+            }
             }
         }
 
-        StudentActionBar(
+        StudentFloatingActions(
             canEdit = canEdit,
             canChangeStatus = canChangeStatus,
             isTerminal = isTerminal,
+            showReactivate = showReactivate,
             hasEnrollments = hasEnrollments,
+            hasOngoingEnrollment = ongoingEnrollment != null,
             onNewEnrollment = onNewEnrollment,
             onRecordPayment = {
                 val enrollmentId = ongoingEnrollment?.enrollmentId
@@ -346,7 +367,11 @@ private fun StudentDetailContent(
             },
             onDropout = { statusDialog = StatusDialogMode.Dropout },
             onNotTakenAdmission = { statusDialog = StatusDialogMode.NotTakenAdmission },
-            onReactivate = { statusDialog = StatusDialogMode.Reactivate }
+            onReactivate = { statusDialog = StatusDialogMode.Reactivate },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = appDimens().spacingLg, bottom = appDimens().spacingLg)
         )
     }
 
@@ -408,28 +433,52 @@ private fun StudentDetailHeader(
     onBack: () -> Unit,
     onEdit: (() -> Unit)?
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = BaseWhite)
-        }
-        Text(
-            title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
-        if (onEdit != null) {
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Outlined.Edit, contentDescription = "Edit student", tint = BaseWhite)
+    AppTopBarBox {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(appDimens().iconSizeXxl)
+                    .clip(CircleShape)
+                    .clickable(onClick = onBack),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.size(appDimens().iconSizeListInner)
+                )
+            }
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.surface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (onEdit != null) Modifier.weight(1f) else Modifier
+            )
+            if (onEdit != null) {
+                Box(
+                    modifier = Modifier
+                        .size(appDimens().iconSizeXxl)
+                        .clip(CircleShape)
+                        .clickable(onClick = onEdit),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.Edit,
+                        contentDescription = "Edit student",
+                        tint = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier.size(appDimens().iconSizeListInner)
+                    )
+                }
             }
         }
     }
@@ -439,58 +488,161 @@ private fun StudentDetailHeader(
 private fun StudentHeroCard(
     student: Student,
     photoBase64: String?,
-    photoLoading: Boolean
+    photoLoading: Boolean,
+    enrollmentCount: Int,
+    paymentCount: Int,
+    totalPaid: Int
 ) {
-    val clipboard = LocalClipboardManager.current
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StudentPhotoAvatar(
-                name = student.fullName,
-                base64 = photoBase64,
-                loading = photoLoading,
-                size = 64
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    student.fullName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(appDimens().spacingLg),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacing14),
+                verticalAlignment = Alignment.Top
+            ) {
+                StudentPhotoAvatar(
+                    name = student.fullName,
+                    base64 = photoBase64,
+                    loading = photoLoading,
+                    size = 80
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(appDimens().loginLogoSize),
+                    verticalArrangement = Arrangement.Center
                 ) {
+                    Text(
+                        student.fullName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     Text(
                         student.studentId,
                         style = MaterialTheme.typography.bodySmall,
-                        color = BrandBlue
-                    )
-                    Icon(
-                        Icons.Outlined.ContentCopy,
-                        contentDescription = "Copy ID",
-                        tint = BrandBlue,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .clickable {
-                                clipboard.setText(AnnotatedString(student.studentId))
-                            }
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                StatusBadge(status = student.status, fontSize = 10.sp)
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
+                ) {
+                    Pill(
+                        text = HERO_STATUS_LABELS[student.status] ?: student.status.name,
+                        color = studentStatusColor(student.status),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    StudentCallButton(phoneNumber = student.phoneNumber)
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = appDimens().spacing14),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HeroStatColumn(
+                    value = enrollmentCount.toString(),
+                    label = "Enrollments",
+                    modifier = Modifier.weight(1f)
+                )
+                VerticalDivider(
+                    modifier = Modifier.height(appDimens().iconSizeXxl),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+                HeroStatColumn(
+                    value = paymentCount.toString(),
+                    label = "Payments",
+                    modifier = Modifier.weight(1f)
+                )
+                VerticalDivider(
+                    modifier = Modifier.height(appDimens().iconSizeXxl),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+                HeroStatColumn(
+                    label = "Total paid",
+                    modifier = Modifier.weight(1f),
+                    valueContent = {
+                        CurrencyText(
+                            amount = totalPaid,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            bold = true
+                        )
+                    }
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun StudentCallButton(phoneNumber: String) {
+    val context = LocalContext.current
+    val colors = appColors()
+
+    IconButton(
+        onClick = {
+            context.startActivity(
+                Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phoneNumber"))
+            )
+        },
+        modifier = Modifier
+            .size(appDimens().callButtonSize)
+            .clip(CircleShape)
+            .background(colors.callActionContainer)
+    ) {
+        Icon(
+            Icons.Outlined.Phone,
+            contentDescription = "Call student",
+            tint = colors.callAction,
+            modifier = Modifier.size(appDimens().iconSizeMd)
+        )
+    }
+}
+
+@Composable
+private fun HeroStatColumn(
+    label: String,
+    modifier: Modifier = Modifier,
+    value: String? = null,
+    valueContent: (@Composable () -> Unit)? = null
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)
+    ) {
+        if (valueContent != null) {
+            valueContent()
+        } else {
+            Text(
+                text = value.orEmpty(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -530,12 +682,12 @@ private fun ProfileTab(student: Student) {
 private fun DetailCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingXs),
             content = content
         )
     }
@@ -543,31 +695,31 @@ private fun DetailCard(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 private fun ProfileSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+    Column(modifier = Modifier.padding(vertical = appDimens().spacingMd)) {
         Text(
             title,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = OnSurfaceVariantLightColor,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = MaterialTheme.typography.labelSmall.letterSpacing
         )
-        Spacer(Modifier.height(10.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(0.dp), content = content)
+        Spacer(Modifier.height(appDimens().spacing10))
+        Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingNone), content = content)
     }
 }
 
 @Composable
 private fun DetailField(label: String, value: String) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = appDimens().spacing10)) {
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = OnSurfaceVariantLightColor
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(appDimens().spacingXs))
         Text(value, style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.height(10.dp))
-        HorizontalDivider(color = OutlineVariantLight)
+        Spacer(Modifier.height(appDimens().spacing10))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
@@ -577,7 +729,7 @@ private fun EnrollmentsTab(enrollments: List<Enrollment>, onOpen: (String) -> Un
         EmptyTabMessage("No enrollments yet.")
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)) {
         enrollments.forEach { enrollment ->
             EnrollmentCard(enrollment = enrollment, onClick = { onOpen(enrollment.enrollmentId) })
         }
@@ -592,9 +744,9 @@ private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
         EnrollmentStatus.Cancelled -> "Cancelled"
     }
     val statusColor = when (enrollment.enrollmentStatus) {
-        EnrollmentStatus.Ongoing -> StatusEmerald
-        EnrollmentStatus.Completed -> StatusGray
-        EnrollmentStatus.Cancelled -> StatusRed
+        EnrollmentStatus.Ongoing -> appColors().success
+        EnrollmentStatus.Completed -> appColors().neutral
+        EnrollmentStatus.Cancelled -> appColors().error
     }
     val feePercent = if (enrollment.totalAmountDue > 0) {
         (enrollment.totalAmountPaid * 100 / enrollment.totalAmountDue).coerceIn(0, 100)
@@ -605,13 +757,13 @@ private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -624,12 +776,12 @@ private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
-                Pill(statusLabel, statusColor, fontSize = 10.sp)
+                Pill(statusLabel, statusColor, style = MaterialTheme.typography.labelMedium)
             }
             Text(
                 "${Formatters.formatDateIst(enrollment.startDate)} → ${Formatters.formatDateIst(enrollment.expectedEndDate)}",
                 style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariantLightColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             enrollment.billingType?.let { billing ->
                 Pill(
@@ -637,13 +789,13 @@ private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
                         BillingType.Installment -> "Installment"
                         BillingType.Subscription -> "Subscription"
                     },
-                    color = BrandBlue,
-                    fontSize = 10.sp
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
-            FeeProgressBar(label = "Fee paid", percent = feePercent, color = BrandBlue)
+            FeeProgressBar(label = "Fee paid", percent = feePercent, color = MaterialTheme.colorScheme.primary)
             if (enrollment.topicsSummary?.hasTopics == true) {
-                FeeProgressBar(label = "Topics", percent = topicsPercent, color = BrandRed)
+                FeeProgressBar(label = "Topics", percent = topicsPercent, color = MaterialTheme.colorScheme.tertiary)
             }
         }
     }
@@ -651,20 +803,20 @@ private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
 
 @Composable
 private fun FeeProgressBar(label: String, percent: Int, color: Color) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(label, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("$percent%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         }
         LinearProgressIndicator(
             progress = { percent / 100f },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(50)),
+                .height(appDimens().spacing6)
+                .clip(appDimens().pillShape),
             color = color,
             trackColor = color.copy(alpha = 0.15f)
         )
@@ -682,7 +834,7 @@ private fun PaymentsTab(
         EmptyTabMessage("No payments recorded yet.")
         return
     }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
         payments.forEach { payment ->
             PaymentCard(
                 payment = payment,
@@ -709,11 +861,14 @@ private fun PaymentCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            modifier = Modifier.padding(appDimens().spacingMd),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -722,27 +877,22 @@ private fun PaymentCard(
                 CurrencyText(payment.amount, style = MaterialTheme.typography.titleMedium, bold = true)
                 Pill(
                     text = if (isVoided) "Voided" else "Paid",
-                    color = if (isVoided) StatusRed else StatusEmerald,
-                    fontSize = 10.sp
+                    color = if (isVoided) appColors().error else appColors().success,
+                    style = MaterialTheme.typography.labelMedium
                 )
             }
             Text(
                 "${Formatters.formatDateIst(payment.paymentDate)} · $methodLabel",
                 style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariantLightColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (!payment.receiptId.isNullOrBlank()) {
-                    TextButton(onClick = onViewReceipt) {
-                        Text("View Receipt", color = BrandBlue, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-                if (canVoid && !isVoided) {
-                    TextButton(onClick = onVoid) {
-                        Text("Void", color = BrandRed, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
+            PaymentActionButtons(
+                showReceipt = !payment.receiptId.isNullOrBlank(),
+                onViewReceipt = onViewReceipt,
+                showVoid = canVoid && !isVoided,
+                onVoid = onVoid
+            )
         }
     }
 }
@@ -756,25 +906,29 @@ private fun DocumentsTab(
     onReplacePhoto: () -> Unit,
     onViewAadhaar: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = CardShape,
-            colors = CardDefaults.cardColors(containerColor = BaseWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            shape = appDimens().cardShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
                 Text("Photo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
-                        .dashedBorder(OutlineVariantLight)
-                        .background(OffWhite, FieldShape),
+                        .height(appDimens().chartHeightPie)
+                        .dashedBorder(
+                            MaterialTheme.colorScheme.outlineVariant,
+                            appDimens().strokeDashed,
+                            appDimens().spacingMd
+                        )
+                        .background(MaterialTheme.colorScheme.background, appDimens().fieldShape),
                     contentAlignment = Alignment.Center
                 ) {
                     when {
-                        photoLoading -> CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                        photoLoading -> ThemedShimmerCircle(size = appDimens().avatarSizeHero)
                         photoBase64 != null -> {
                             val bitmap = rememberBase64ImageBitmap(photoBase64)
                             if (bitmap != null) {
@@ -782,8 +936,8 @@ private fun DocumentsTab(
                                     bitmap = bitmap,
                                     contentDescription = "Student photo",
                                     modifier = Modifier
-                                        .size(96.dp)
-                                        .clip(RoundedCornerShape(50))
+                                        .size(appDimens().avatarSizeHero)
+                                        .clip(appDimens().pillShape)
                                 )
                             } else {
                                 ColoredPhotoAvatar(name = student.fullName, size = 96)
@@ -796,10 +950,10 @@ private fun DocumentsTab(
                     onClick = onReplacePhoto,
                     enabled = !busy,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = FieldShape
+                    shape = appDimens().fieldShape
                 ) {
-                    Icon(Icons.Outlined.Image, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(8.dp))
+                    Icon(Icons.Outlined.Image, contentDescription = null, modifier = Modifier.size(appDimens().iconSizeSm))
+                    Spacer(Modifier.size(appDimens().spacingSm))
                     Text(if (busy) "Uploading…" else "Replace Photo")
                 }
             }
@@ -807,40 +961,40 @@ private fun DocumentsTab(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = CardShape,
-            colors = CardDefaults.cardColors(containerColor = BaseWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            shape = appDimens().cardShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(modifier = Modifier.padding(appDimens().spacingLg), verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)) {
                 Text("Aadhaar Document", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
                     "Masked: ${Formatters.maskAadhaar(student.aadhaarNumber).ifBlank { "Not set" }}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariantLightColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(BrandBlueTint, FieldShape)
-                        .border(1.dp, BrandBlue.copy(alpha = 0.2f), FieldShape)
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        .background(MaterialTheme.colorScheme.primaryContainer, appDimens().fieldShape)
+                        .border(appDimens().strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), appDimens().fieldShape)
+                        .padding(appDimens().spacingMd),
+                    horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10),
                     verticalAlignment = Alignment.Top
                 ) {
-                    Icon(Icons.Outlined.Info, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeSm))
                     Text(
                         "Viewing this document will be logged for audit purposes.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = BrandBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
                 OutlinedButton(
                     onClick = onViewAadhaar,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = FieldShape
+                    shape = appDimens().fieldShape
                 ) {
-                    Icon(Icons.Outlined.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(8.dp))
+                    Icon(Icons.Outlined.Visibility, contentDescription = null, modifier = Modifier.size(appDimens().iconSizeSm))
+                    Spacer(Modifier.size(appDimens().spacingSm))
                     Text("View Aadhaar")
                 }
             }
@@ -848,99 +1002,201 @@ private fun DocumentsTab(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StudentActionBar(
+private fun StudentFloatingActions(
     canEdit: Boolean,
     canChangeStatus: Boolean,
     isTerminal: Boolean,
+    showReactivate: Boolean,
     hasEnrollments: Boolean,
+    hasOngoingEnrollment: Boolean,
+    onNewEnrollment: () -> Unit,
+    onRecordPayment: () -> Unit,
+    onDropout: () -> Unit,
+    onNotTakenAdmission: () -> Unit,
+    onReactivate: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val showFab = canEdit || (canChangeStatus && !isTerminal) || showReactivate
+    if (!showFab) return
+
+    var showActionsSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    Box(modifier = modifier) {
+        FloatingActionButton(
+            onClick = { showActionsSheet = true },
+            containerColor = MaterialTheme.colorScheme.tertiary,
+            contentColor = MaterialTheme.colorScheme.surface,
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = appDimens().spacingXs)
+        ) {
+            Icon(Icons.Outlined.Add, contentDescription = "Student actions")
+        }
+    }
+
+    if (showActionsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showActionsSheet = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            StudentActionsBottomSheet(
+                canEdit = canEdit,
+                canChangeStatus = canChangeStatus && !isTerminal,
+                showReactivate = showReactivate,
+                hasEnrollments = hasEnrollments,
+                hasOngoingEnrollment = hasOngoingEnrollment,
+                onNewEnrollment = {
+                    showActionsSheet = false
+                    onNewEnrollment()
+                },
+                onRecordPayment = {
+                    showActionsSheet = false
+                    onRecordPayment()
+                },
+                onDropout = {
+                    showActionsSheet = false
+                    onDropout()
+                },
+                onNotTakenAdmission = {
+                    showActionsSheet = false
+                    onNotTakenAdmission()
+                },
+                onReactivate = {
+                    showActionsSheet = false
+                    onReactivate()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun StudentActionsBottomSheet(
+    canEdit: Boolean,
+    canChangeStatus: Boolean,
+    showReactivate: Boolean,
+    hasEnrollments: Boolean,
+    hasOngoingEnrollment: Boolean,
     onNewEnrollment: () -> Unit,
     onRecordPayment: () -> Unit,
     onDropout: () -> Unit,
     onNotTakenAdmission: () -> Unit,
     onReactivate: () -> Unit
 ) {
-    if (!canEdit && !canChangeStatus) return
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BaseWhite)
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(bottom = appDimens().spacingLg)
     ) {
+        Text(
+            text = "Student actions",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = appDimens().iconSizeLg, vertical = appDimens().spacingSm)
+        )
+
         if (canEdit) {
-            Button(
-                onClick = onNewEnrollment,
-                modifier = Modifier.fillMaxWidth(),
-                shape = FieldShape,
-                colors = ButtonDefaults.buttonColors(containerColor = BrandRed, contentColor = BaseWhite)
-            ) {
-                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(8.dp))
-                Text("New Enrollment", fontWeight = FontWeight.Bold)
-            }
-            OutlinedButton(
-                onClick = onRecordPayment,
-                modifier = Modifier.fillMaxWidth(),
-                shape = FieldShape,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = BrandBlueTint,
-                    contentColor = BrandBlue
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, BrandBlue.copy(alpha = 0.35f))
-            ) {
-                Icon(Icons.Outlined.CreditCard, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(8.dp))
-                Text("Record Payment", fontWeight = FontWeight.SemiBold)
-            }
+            StudentActionSheetRow(
+                icon = Icons.Outlined.Add,
+                label = "New Enrollment",
+                onClick = onNewEnrollment
+            )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(horizontal = appDimens().iconSizeLg)
+            )
+            StudentActionSheetRow(
+                icon = Icons.Outlined.CreditCard,
+                label = "Record a Payment",
+                enabled = hasOngoingEnrollment,
+                subtitle = if (!hasOngoingEnrollment) "Requires an ongoing enrollment" else null,
+                onClick = onRecordPayment
+            )
         }
+
         if (canChangeStatus) {
-            if (!isTerminal) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onDropout,
-                        enabled = hasEnrollments,
-                        modifier = Modifier.weight(1f),
-                        shape = FieldShape,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandRed),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, BrandRed.copy(alpha = 0.6f))
-                    ) {
-                        Icon(Icons.Outlined.PersonOff, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.size(6.dp))
-                        Text("Dropout", fontSize = 13.sp)
-                    }
-                    OutlinedButton(
-                        onClick = onNotTakenAdmission,
-                        enabled = !hasEnrollments,
-                        modifier = Modifier.weight(1f),
-                        shape = FieldShape,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = OnSurfaceVariantLightColor,
-                            disabledContentColor = OnSurfaceVariantLightColor.copy(alpha = 0.5f)
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (!hasEnrollments) BrandRed.copy(alpha = 0.4f) else OutlineVariantLight
-                        )
-                    ) {
-                        Icon(Icons.Outlined.EventBusy, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.size(6.dp))
-                        Text("Not Admitted", fontSize = 13.sp)
-                    }
-                }
-            } else {
-                OutlinedButton(
-                    onClick = onReactivate,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = FieldShape
-                ) {
-                    Text("Reactivate Student", fontWeight = FontWeight.SemiBold)
-                }
+            if (canEdit) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(horizontal = appDimens().iconSizeLg)
+                )
+            }
+            StudentActionSheetRow(
+                icon = Icons.Outlined.PersonOff,
+                label = "Dropout",
+                enabled = hasEnrollments,
+                subtitle = if (!hasEnrollments) "Requires at least one enrollment" else null,
+                onClick = onDropout
+            )
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.padding(horizontal = appDimens().iconSizeLg)
+            )
+            StudentActionSheetRow(
+                icon = Icons.Outlined.EventBusy,
+                label = "Not Admitted",
+                enabled = !hasEnrollments,
+                subtitle = if (hasEnrollments) "Only available before enrollment" else null,
+                onClick = onNotTakenAdmission
+            )
+        }
+
+        if (showReactivate) {
+            if (canEdit || canChangeStatus) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(horizontal = appDimens().iconSizeLg)
+                )
+            }
+            StudentActionSheetRow(
+                icon = Icons.Outlined.Replay,
+                label = "Reactivate Student",
+                onClick = onReactivate
+            )
+        }
+    }
+}
+
+@Composable
+private fun StudentActionSheetRow(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean = true,
+    subtitle: String? = null,
+    onClick: () -> Unit
+) {
+    val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = appDimens().iconSizeLg, vertical = appDimens().spacingLg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingLg)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (enabled) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.size(appDimens().iconSizeLg)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = contentColor
+            )
+            subtitle?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -955,7 +1211,7 @@ private fun VoidPaymentDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit
         text = {
             Column {
                 Text("This cannot be undone. Enter a reason:")
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(appDimens().spacingSm))
                 OutlinedTextField(
                     value = reason,
                     onValueChange = { reason = it },
@@ -968,7 +1224,7 @@ private fun VoidPaymentDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit
             TextButton(
                 onClick = { onConfirm(reason.trim()) },
                 enabled = reason.isNotBlank()
-            ) { Text("Void", color = BrandRed) }
+            ) { Text("Void", color = MaterialTheme.colorScheme.tertiary) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -980,26 +1236,26 @@ private fun VoidPaymentDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit
 private fun EmptyTabMessage(message: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Text(
             message,
-            modifier = Modifier.fillMaxWidth().padding(28.dp),
+            modifier = Modifier.fillMaxWidth().padding(appDimens().spacing28),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium,
-            color = OnSurfaceVariantLightColor
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
-private fun Modifier.dashedBorder(color: Color): Modifier = drawBehind {
-    val strokeWidth = 1.5.dp.toPx()
+private fun Modifier.dashedBorder(color: Color, strokeWidth: Dp, cornerRadius: Dp): Modifier = drawBehind {
+    val strokeWidthPx = strokeWidth.toPx()
     val dash = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
-    val corner = 12.dp.toPx()
+    val corner = cornerRadius.toPx()
     drawRoundRect(
         color = color,
-        style = Stroke(width = strokeWidth, pathEffect = dash),
+        style = Stroke(width = strokeWidthPx, pathEffect = dash),
         cornerRadius = CornerRadius(corner, corner)
     )
 }

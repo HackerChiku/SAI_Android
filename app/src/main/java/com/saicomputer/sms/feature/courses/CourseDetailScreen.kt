@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.courses
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -48,13 +49,11 @@ import com.saicomputer.sms.core.ui.ListItemCard
 import com.saicomputer.sms.core.ui.ListItemIconBox
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.SmsTopBar
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandGold
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Course
 import com.saicomputer.sms.data.model.CourseTopic
 import com.saicomputer.sms.data.model.PackageType
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -106,30 +105,30 @@ private fun CourseDetailContent(
     topics: List<CourseTopic>
 ) {
     val billingColor = when (course.billingType) {
-        BillingType.Installment -> BrandBlue
-        BillingType.Subscription -> BrandGold
+        BillingType.Installment -> MaterialTheme.colorScheme.primary
+        BillingType.Subscription -> appColors().brandSecondary
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(appDimens().spacingLg),
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
     ) {
         ListItemCard {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.padding(appDimens().spacingLg),
+                verticalArrangement = Arrangement.spacedBy(appDimens().spacing14)
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(appDimens().spacing14),
                     verticalAlignment = Alignment.Top
                 ) {
                     ListItemIconBox(icon = Icons.AutoMirrored.Outlined.MenuBook)
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
                     ) {
                         Text(
                             course.courseName,
@@ -146,13 +145,13 @@ private fun CourseDetailContent(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
                             GenericBadge(course.billingType.name, billingColor)
-                            if (course.generateCertificate) GenericBadge("Certificate", BrandBlue)
+                            if (course.generateCertificate) GenericBadge("Certificate", MaterialTheme.colorScheme.primary)
                             if (!course.isActive) {
                                 GenericBadge("Inactive", MaterialTheme.colorScheme.error)
                             } else {
-                                GenericBadge("Active", StatusEmerald)
+                                GenericBadge("Active", appColors().success)
                             }
                         }
                     }
@@ -167,12 +166,12 @@ private fun CourseDetailContent(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
                         ) {
                             Icon(
                                 Icons.Outlined.Schedule,
                                 contentDescription = null,
-                                modifier = Modifier.width(14.dp).height(14.dp),
+                                modifier = Modifier.width(appDimens().spacing14).height(appDimens().spacing14),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
@@ -191,7 +190,7 @@ private fun CourseDetailContent(
                 }
 
                 if (course.currentActiveEnrollments > 0) {
-                    GenericBadge("${course.currentActiveEnrollments} active enrollments", StatusEmerald)
+                    GenericBadge("${course.currentActiveEnrollments} active enrollments", appColors().success)
                 }
             }
         }
@@ -232,7 +231,7 @@ private fun CourseDetailContent(
                     topics.forEachIndexed { index, topic ->
                         if (index > 0) {
                             HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 8.dp),
+                                modifier = Modifier.padding(vertical = appDimens().spacingSm),
                                 color = MaterialTheme.colorScheme.outlineVariant
                             )
                         }
@@ -262,7 +261,7 @@ private fun StatItem(label: String, amount: Int, emphasized: Boolean = false) {
 
 @Composable
 private fun TopicRow(topic: CourseTopic) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -303,18 +302,18 @@ private fun DetailSection(
 ) {
     ListItemCard {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.width(18.dp).height(18.dp)
+                    modifier = Modifier.width(appDimens().iconSizeSm).height(appDimens().iconSizeSm)
                 )
                 Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             }
@@ -326,7 +325,7 @@ private fun DetailSection(
 
 @Composable
 private fun DetailInfoRow(label: String, value: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,

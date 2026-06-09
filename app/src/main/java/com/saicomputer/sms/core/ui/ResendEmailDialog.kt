@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun ResendEmailDialog(
@@ -29,7 +30,7 @@ fun ResendEmailDialog(
         text = {
             Column {
                 Text("Send the document to:")
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(appDimens().spacingSm))
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },

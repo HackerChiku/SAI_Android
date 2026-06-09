@@ -1,5 +1,6 @@
 package com.saicomputer.sms.core.ui
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,14 +36,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
-import com.saicomputer.sms.core.ui.theme.StatusBlue
 import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.data.model.UserRole
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 data class UserMenuActions(
     val onProfile: () -> Unit,
@@ -63,7 +59,7 @@ fun ProvideUserMenuActions(
 fun ProfileMenuButton(
     user: User?,
     modifier: Modifier = Modifier,
-    size: Dp = 36.dp,
+    size: Dp = appDimens().iconSizeXxl,
     backgroundAlpha: Float = 0.5f
 ) {
     val actions = LocalUserMenuActions.current
@@ -74,28 +70,32 @@ fun ProfileMenuButton(
         Box(
             modifier = Modifier
                 .size(size)
-                .border(2.dp, BaseWhite, CircleShape)
+                .border(appDimens().spacingXxs, MaterialTheme.colorScheme.surface, CircleShape)
                 .clip(CircleShape)
-                .background(BrandBlue.copy(alpha = backgroundAlpha))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = backgroundAlpha))
                 .clickable { expanded = true },
             contentAlignment = Alignment.Center
         ) {
             Text(
                 initial,
-                color = BaseWhite,
+                color = MaterialTheme.colorScheme.surface,
                 fontWeight = FontWeight.Bold,
-                fontSize = if (size >= 40.dp) 16.sp else 14.sp
+                style = if (size >= appDimens().callButtonSize) {
+                    MaterialTheme.typography.titleMedium
+                } else {
+                    MaterialTheme.typography.titleSmall
+                }
             )
         }
 
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.width(260.dp),
-            shape = RoundedCornerShape(14.dp),
-            containerColor = BaseWhite
+            modifier = Modifier.width(appDimens().dropdownMenuWidth),
+            shape = appDimens().cardShape,
+            containerColor = MaterialTheme.colorScheme.surface
         ) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Column(modifier = Modifier.padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacing14)) {
                 Text(
                     user?.fullName ?: "Signed in",
                     style = MaterialTheme.typography.titleMedium,
@@ -104,20 +104,20 @@ fun ProfileMenuButton(
                 Text(
                     user?.email.orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariantLightColor,
-                    modifier = Modifier.padding(top = 2.dp)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = appDimens().spacingXxs)
                 )
                 user?.role?.let { role ->
                     Pill(
                         text = roleLabel(role),
-                        color = StatusBlue,
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(top = 8.dp)
+                        color = appColors().info,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(top = appDimens().spacingSm)
                     )
                 }
             }
 
-            HorizontalDivider(color = OutlineVariantLight)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             ProfileMenuRow(
                 label = "Profile",
@@ -131,7 +131,7 @@ fun ProfileMenuButton(
             ProfileMenuRow(
                 label = "Sign out",
                 icon = Icons.AutoMirrored.Outlined.Logout,
-                tint = BrandRed,
+                tint = MaterialTheme.colorScheme.tertiary,
                 onClick = {
                     expanded = false
                     actions?.onLogout?.invoke()
@@ -152,11 +152,11 @@ private fun ProfileMenuRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
     ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(appDimens().iconSizeMd))
         Text(
             label,
             style = MaterialTheme.typography.bodyLarge,

@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.audit
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -59,21 +60,13 @@ import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SubpageTitleBar
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineLight
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
-import com.saicomputer.sms.core.ui.theme.StatusBlue
 import com.saicomputer.sms.data.model.AuditLogEntry
 import com.saicomputer.sms.data.model.User
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
 
 @Composable
 fun AuditScreen(
@@ -86,12 +79,12 @@ fun AuditScreen(
     val actionOptions by viewModel.actionOptions.collectAsStateWithLifecycle()
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = OutlineLight,
-        unfocusedBorderColor = OutlineVariantLight,
-        focusedContainerColor = BaseWhite,
-        unfocusedContainerColor = BaseWhite,
-        focusedPlaceholderColor = OnSurfaceVariantLightColor,
-        unfocusedPlaceholderColor = OnSurfaceVariantLightColor
+        focusedBorderColor = MaterialTheme.colorScheme.outline,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -100,14 +93,14 @@ fun AuditScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OffWhite)
-                .padding(horizontal = 16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = appDimens().spacingLg)
         ) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10)
             ) {
                 ActionFilterDropdown(
                     selected = filters.action,
@@ -125,7 +118,7 @@ fun AuditScreen(
                 )
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
 
             when (val s = state) {
                 is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
@@ -143,20 +136,20 @@ fun AuditScreen(
                     } else {
                         Card(
                             modifier = Modifier.fillMaxSize(),
-                            shape = CardShape,
-                            colors = CardDefaults.cardColors(containerColor = BaseWhite),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            shape = appDimens().cardShape,
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
                         ) {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(vertical = 4.dp)
+                                contentPadding = PaddingValues(vertical = appDimens().spacingXs)
                             ) {
                                 itemsIndexed(s.data, key = { _, entry -> entry.logId }) { index, entry ->
                                     AuditLogRow(entry = entry)
                                     if (index < s.data.lastIndex) {
                                         HorizontalDivider(
-                                            color = OutlineVariantLight,
-                                            modifier = Modifier.padding(horizontal = 16.dp)
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                            modifier = Modifier.padding(horizontal = appDimens().spacingLg)
                                         )
                                     }
                                 }
@@ -196,9 +189,9 @@ private fun ActionFilterDropdown(
             onValueChange = {},
             readOnly = true,
             trailingIcon = {
-                Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = OnSurfaceVariantLightColor)
+                Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             },
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             modifier = Modifier
                 .menuAnchor()
@@ -239,9 +232,9 @@ private fun AuditDateFilter(
             readOnly = true,
             placeholder = { Text("dd / mm / yyyy") },
             trailingIcon = {
-                Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = OnSurfaceVariantLightColor)
+                Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             },
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
         )
@@ -296,19 +289,19 @@ private fun AuditLogRow(entry: AuditLogEntry) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacing14),
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Pill(text = entry.actionLabel, color = StatusBlue, fontSize = 10.sp)
+            Pill(text = entry.actionLabel, color = appColors().info, style = MaterialTheme.typography.labelMedium)
             Text(
                 Formatters.formatDateIst(entry.timestamp),
                 style = MaterialTheme.typography.labelSmall,
-                color = OnSurfaceVariantLightColor
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -323,14 +316,14 @@ private fun AuditLogRow(entry: AuditLogEntry) {
         Text(
             entry.performerLine,
             style = MaterialTheme.typography.bodySmall,
-            color = OnSurfaceVariantLightColor
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         entry.detailLine?.let { detail ->
             Text(
                 detail,
                 style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariantLightColor,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )

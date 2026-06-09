@@ -47,17 +47,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
 import com.saicomputer.sms.data.dto.ExportResponse
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
-private val FieldShape = RoundedCornerShape(12.dp)
-private val IconShape = RoundedCornerShape(10.dp)
 
 @Composable
 fun ExportsScreen(
@@ -88,10 +81,10 @@ fun ExportsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OffWhite)
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             ExportsInfoBanner()
 
@@ -156,19 +149,18 @@ private fun ExportsInfoBanner() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .background(BrandBlueTint)
-            .border(1.dp, BrandBlue.copy(alpha = 0.25f), FieldShape)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .clip(appDimens().fieldShape)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), appDimens().fieldShape)
+            .padding(appDimens().spacingMd),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10),
         verticalAlignment = Alignment.Top
     ) {
-        Icon(Icons.Outlined.Info, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(20.dp))
+        Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeMd))
         Text(
             "Exports are generated as CSV files and ready for download instantly.",
             style = MaterialTheme.typography.bodySmall,
-            color = BrandBlue,
-            lineHeight = 18.sp
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -185,33 +177,33 @@ private fun ExportCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacing14)
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(IconShape)
-                        .background(BrandBlueTint),
+                        .size(appDimens().avatarSizeList)
+                        .clip(appDimens().iconShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(icon, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(22.dp))
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeListInner))
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
                     Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
                         subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariantLightColor
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -236,24 +228,24 @@ private fun ExportActionButton(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(FieldShape)
-            .background(BrandBlueTint)
-            .border(1.dp, BrandBlue.copy(alpha = 0.35f), FieldShape)
+            .clip(appDimens().fieldShape)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), appDimens().fieldShape)
             .clickable(enabled = enabled && !loading, onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = appDimens().spacingMd),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (loading) {
             CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
-                color = BrandBlue
+                modifier = Modifier.size(appDimens().iconSizeSm),
+                strokeWidth = appDimens().spacingXxs,
+                color = MaterialTheme.colorScheme.primary
             )
         } else {
-            Icon(Icons.Outlined.Download, contentDescription = null, tint = BrandBlue, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.size(6.dp))
-            Text(label, color = BrandBlue, fontWeight = FontWeight.SemiBold)
+            Icon(Icons.Outlined.Download, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(appDimens().iconSizeSm))
+            Spacer(Modifier.size(appDimens().spacing6))
+            Text(label, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
         }
     }
 }

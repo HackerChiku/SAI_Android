@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.saicomputer.sms.data.dto.InstallmentEditRow
 import com.saicomputer.sms.data.model.Installment
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun InstallmentEditDialog(
@@ -47,7 +48,7 @@ fun InstallmentEditDialog(
             androidx.compose.foundation.layout.Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 480.dp)
+                    .heightIn(max = appDimens().dialogMaxHeight)
                     .verticalScroll(rememberScrollState())
             ) {
                 InstallmentEditor(

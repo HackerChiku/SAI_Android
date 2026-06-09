@@ -1,5 +1,6 @@
 package com.saicomputer.sms.feature.enrollments
 
+import com.saicomputer.sms.core.ui.theme.appColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,45 +21,42 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
+import com.saicomputer.sms.core.ui.FilterDialogShell
+import com.saicomputer.sms.core.ui.FilterDropdown
+import com.saicomputer.sms.core.ui.ListSearchFilterSortBar
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.ProfileMenuButton
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.StatusAmber
-import com.saicomputer.sms.core.ui.theme.StatusBlue
-import com.saicomputer.sms.core.ui.theme.StatusEmerald
-import com.saicomputer.sms.core.ui.theme.StatusGray
+import com.saicomputer.sms.core.ui.SortDialog
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Enrollment
-import com.saicomputer.sms.data.model.EnrollmentStatus
 import com.saicomputer.sms.data.model.User
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val CardShape = RoundedCornerShape(14.dp)
 
 @Composable
 fun EnrollmentsListScreen(
@@ -67,7 +65,18 @@ fun EnrollmentsListScreen(
     onOpenEnrollment: (String) -> Unit,
     viewModel: EnrollmentsListViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val filters by viewModel.filters.collectAsStateWithLifecycle()
+    val courses by viewModel.courses.collectAsStateWithLifecycle()
+    val displayItems by viewModel.displayItems.collectAsStateWithLifecycle()
+    var showFilterDialog by remember { mutableStateOf(false) }
+    var showSortDialog by remember { mutableStateOf(false) }
+
+    val courseOptions = remember(courses) {
+        listOf("All") + courses.map { it.courseId }
+    }
+    val courseLabels = remember(courses) {
+        mapOf("All" to "All Courses") + courses.associate { it.courseId to it.label }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         EnrollmentsListHeader(user = user, onNewEnrollment = onNewEnrollment)
@@ -75,12 +84,50 @@ fun EnrollmentsListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(OffWhite)
-                .padding(horizontal = 16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = appDimens().spacingLg)
         ) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
 
-            when (val s = state) {
+            ListSearchFilterSortBar(
+                search = filters.search,
+                onSearchChange = viewModel::onSearchChange,
+                searchPlaceholder = "Search by student or course",
+                hasActiveFilters = filters.hasActiveFilters,
+                hasActiveSort = filters.hasActiveSort,
+                onFilterClick = { showFilterDialog = true },
+                onSortClick = { showSortDialog = true }
+            )
+
+            if (showFilterDialog) {
+                EnrollmentsFilterDialog(
+                    displayStatus = filters.displayStatus,
+                    billingType = filters.billingType,
+                    courseId = filters.courseId,
+                    courseOptions = courseOptions,
+                    courseLabels = courseLabels,
+                    onDisplayStatusChange = viewModel::onDisplayStatusChange,
+                    onBillingTypeChange = viewModel::onBillingTypeChange,
+                    onCourseChange = viewModel::onCourseChange,
+                    onClear = viewModel::clearFilterFields,
+                    onDismiss = { showFilterDialog = false }
+                )
+            }
+
+            if (showSortDialog) {
+                SortDialog(
+                    title = "Sort",
+                    options = EnrollmentSort.OPTIONS,
+                    optionLabels = EnrollmentSort.LABELS,
+                    selected = filters.sort,
+                    onSelected = viewModel::onSortChange,
+                    onDismiss = { showSortDialog = false }
+                )
+            }
+
+            Spacer(Modifier.height(appDimens().spacingMd))
+
+            when (val s = displayItems) {
                 is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
                 is UiState.Error -> ErrorState(
                     message = s.message,
@@ -89,17 +136,26 @@ fun EnrollmentsListScreen(
                 )
                 is UiState.Success -> {
                     if (s.data.isEmpty()) {
-                        EmptyState(
-                            title = "No enrollments yet",
-                            actionLabel = "New Enrollment",
-                            onAction = onNewEnrollment,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        if (viewModel.hasActiveClientFilters) {
+                            EmptyState(
+                                title = "No enrollments match your filters",
+                                actionLabel = "Clear filters",
+                                onAction = viewModel::clearFilters,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            EmptyState(
+                                title = "No enrollments yet",
+                                actionLabel = "New Enrollment",
+                                onAction = onNewEnrollment,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            contentPadding = PaddingValues(bottom = appDimens().spacingLg),
+                            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
                         ) {
                             items(s.data, key = { it.enrollment.enrollmentId }) { item ->
                                 EnrollmentCard(
@@ -115,34 +171,81 @@ fun EnrollmentsListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EnrollmentsFilterDialog(
+    displayStatus: String,
+    billingType: String,
+    courseId: String,
+    courseOptions: List<String>,
+    courseLabels: Map<String, String>,
+    onDisplayStatusChange: (String) -> Unit,
+    onBillingTypeChange: (String) -> Unit,
+    onCourseChange: (String) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    FilterDialogShell(
+        title = "Filters",
+        onClear = onClear,
+        onDismiss = onDismiss
+    ) {
+        FilterDropdown(
+            displayLabel = EnrollmentDisplayStatus.LABELS[displayStatus] ?: "All Status",
+            options = EnrollmentDisplayStatus.OPTIONS,
+            optionLabels = EnrollmentDisplayStatus.LABELS,
+            selected = displayStatus,
+            onSelected = onDisplayStatusChange,
+            modifier = Modifier.fillMaxWidth()
+        )
+        FilterDropdown(
+            displayLabel = EnrollmentBillingFilter.LABELS[billingType] ?: "All Billing",
+            options = EnrollmentBillingFilter.OPTIONS,
+            optionLabels = EnrollmentBillingFilter.LABELS,
+            selected = billingType,
+            onSelected = onBillingTypeChange,
+            modifier = Modifier.fillMaxWidth()
+        )
+        FilterDropdown(
+            displayLabel = courseLabels[courseId] ?: "All Courses",
+            options = courseOptions,
+            optionLabels = courseLabels,
+            selected = courseId,
+            onSelected = onCourseChange,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
 @Composable
 private fun EnrollmentsListHeader(user: User?, onNewEnrollment: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            "Enrollments",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = BaseWhite
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(BrandRed)
-                    .clickable(onClick = onNewEnrollment),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Outlined.Add, contentDescription = "New enrollment", tint = BaseWhite, modifier = Modifier.size(22.dp))
+    AppTopBarBox {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Enrollments",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.surface
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(appDimens().iconSizeXxl)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.tertiary)
+                        .clickable(onClick = onNewEnrollment),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = "New enrollment", tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(appDimens().iconSizeListInner))
+                }
+                ProfileMenuButton(user = user)
             }
-            ProfileMenuButton(user = user)
         }
     }
 }
@@ -163,21 +266,21 @@ private fun EnrollmentCard(item: EnrollmentListItem, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ColoredPhotoAvatar(name = studentName, size = 44)
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(appDimens().spacingXxs)) {
                     Text(
                         studentName,
                         style = MaterialTheme.typography.titleMedium,
@@ -188,20 +291,20 @@ private fun EnrollmentCard(item: EnrollmentListItem, onClick: () -> Unit) {
                     Text(
                         courseName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariantLightColor,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Pill(text = statusLabel, color = statusColor, fontSize = 10.sp)
+                Pill(text = statusLabel, color = statusColor, style = MaterialTheme.typography.labelMedium)
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Pill(text = billingLabel, color = StatusBlue, fontSize = 10.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm), verticalAlignment = Alignment.CenterVertically) {
+                Pill(text = billingLabel, color = appColors().info, style = MaterialTheme.typography.labelMedium)
                 Text(
                     Formatters.formatDateIst(enrollment.startDate),
                     style = MaterialTheme.typography.bodySmall,
-                    color = OnSurfaceVariantLightColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -210,16 +313,16 @@ private fun EnrollmentCard(item: EnrollmentListItem, onClick: () -> Unit) {
                     Text(
                         "Paid through: ${Formatters.formatDateIst(paidThrough)}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariantLightColor
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else if (enrollment.totalAmountDue > 0) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Paid", style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariantLightColor)
+                        Text("Paid", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             "$paidPercent%",
                             style = MaterialTheme.typography.labelSmall,
@@ -230,10 +333,10 @@ private fun EnrollmentCard(item: EnrollmentListItem, onClick: () -> Unit) {
                         progress = { paidPercent / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color = BrandBlue,
-                        trackColor = OffWhite
+                            .height(appDimens().spacing6)
+                            .clip(RoundedCornerShape(appDimens().cornerRadiusProgress)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.background
                     )
                 }
             }
@@ -241,16 +344,17 @@ private fun EnrollmentCard(item: EnrollmentListItem, onClick: () -> Unit) {
     }
 }
 
+@Composable
 private fun enrollmentStatusDisplay(enrollment: Enrollment): Pair<String, androidx.compose.ui.graphics.Color> {
-    return when {
-        enrollment.enrollmentStatus == EnrollmentStatus.Completed ->
-            "Completed" to StatusGray
-        enrollment.enrollmentStatus == EnrollmentStatus.Cancelled ->
-            "Cancelled" to StatusAmber
-        enrollment.balance > 0 ->
-            "Pmt Pending" to StatusAmber
+    return when (enrollmentDisplayStatusKey(enrollment)) {
+        EnrollmentDisplayStatus.COMPLETED ->
+            "Completed" to appColors().neutral
+        EnrollmentDisplayStatus.CANCELLED ->
+            "Cancelled" to appColors().warning
+        EnrollmentDisplayStatus.PAYMENT_PENDING ->
+            "Pmt Pending" to appColors().warning
         else ->
-            "Active" to StatusEmerald
+            "Active" to appColors().success
     }
 }
 

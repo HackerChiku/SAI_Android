@@ -25,10 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun ChangePasswordScreen(
@@ -44,18 +43,18 @@ fun ChangePasswordScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(BrandBlue)
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(horizontal = appDimens().spacingXs, vertical = appDimens().spacingSm),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = BaseWhite)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.surface)
                 }
                 Text(
                     "Change Password",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = BaseWhite
+                    color = MaterialTheme.colorScheme.surface
                 )
             }
         }
@@ -63,7 +62,7 @@ fun ChangePasswordScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(appDimens().iconSizeLg),
             verticalArrangement = Arrangement.Center
         ) {
         if (forced) {
@@ -78,7 +77,7 @@ fun ChangePasswordScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(appDimens().iconSizeLg))
 
         OutlinedTextField(
             value = state.currentPassword,
@@ -89,7 +88,7 @@ fun ChangePasswordScreen(
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(appDimens().spacingMd))
         OutlinedTextField(
             value = state.newPassword,
             onValueChange = viewModel::onNewChange,
@@ -101,7 +100,7 @@ fun ChangePasswordScreen(
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(appDimens().spacingMd))
         OutlinedTextField(
             value = state.confirmPassword,
             onValueChange = viewModel::onConfirmChange,
@@ -115,11 +114,11 @@ fun ChangePasswordScreen(
         )
 
         if (state.error != null) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(appDimens().spacingMd))
             Text(state.error!!, color = MaterialTheme.colorScheme.error)
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(appDimens().iconSizeLg))
         Button(
             onClick = { viewModel.submit(onChanged) },
             enabled = state.canSubmit,
@@ -127,8 +126,8 @@ fun ChangePasswordScreen(
         ) {
             if (state.submitting) {
                 CircularProgressIndicator(
-                    modifier = Modifier.height(20.dp),
-                    strokeWidth = 2.dp,
+                    modifier = Modifier.height(appDimens().iconSizeMd),
+                    strokeWidth = appDimens().spacingXxs,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {

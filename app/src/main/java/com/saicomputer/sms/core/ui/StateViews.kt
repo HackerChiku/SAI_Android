@@ -1,21 +1,15 @@
 package com.saicomputer.sms.core.ui
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.WifiOff
@@ -25,82 +19,159 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun LoadingSkeleton(
     modifier: Modifier = Modifier,
     rows: Int = 6
 ) {
-    val brush = rememberShimmerBrush()
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        userScrollEnabled = false,
-        contentPadding = PaddingValues(0.dp)
-    ) {
-        items(rows) {
-            SkeletonRow(brush)
+    AppShimmerTheme {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd),
+            userScrollEnabled = false,
+            contentPadding = PaddingValues(appDimens().spacingNone)
+        ) {
+            items(rows) {
+                ShimmerListRow()
+            }
         }
     }
 }
 
-/** Animated shimmer gradient that sweeps horizontally. */
 @Composable
-fun rememberShimmerBrush(): Brush {
-    val base = MaterialTheme.colorScheme.surfaceVariant
-    val highlight = MaterialTheme.colorScheme.surfaceContainerHighest
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val translate by transition.animateFloat(
-        initialValue = -2f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1300),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerTranslate"
-    )
-    val shift = 700f * translate
-    return Brush.linearGradient(
-        colors = listOf(base, highlight, base),
-        start = Offset(shift, 0f),
-        end = Offset(shift + 700f, 0f)
-    )
+fun ShimmerListRow(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = appDimens().spacingXs),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacingMd),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ShimmerCircle(size = appDimens().avatarSizeList)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
+        ) {
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth(0.55f)
+                    .height(appDimens().spacing14)
+            )
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth(0.75f)
+                    .height(appDimens().spacingMd)
+            )
+        }
+        ShimmerBox(
+            modifier = Modifier
+                .fillMaxWidth(0.18f)
+                .height(appDimens().spacingLg)
+        )
+    }
 }
 
 @Composable
-private fun SkeletonRow(brush: Brush) {
-    Column(
-        modifier = Modifier
+fun ShimmerPagingRow(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(brush)
-            .padding(16.dp)
+            .padding(appDimens().spacingLg),
+        horizontalArrangement = Arrangement.Center
     ) {
-        Spacer(
-            Modifier
-                .fillMaxWidth(0.5f)
-                .height(14.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.outlineVariant)
-        )
-        Spacer(Modifier.height(10.dp))
-        Spacer(
-            Modifier
-                .fillMaxWidth(0.8f)
-                .height(12.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.outlineVariant)
-        )
+        ShimmerListRow(modifier = Modifier.fillMaxWidth(0.92f))
+    }
+}
+
+@Composable
+fun FormLoadingSkeleton(
+    modifier: Modifier = Modifier,
+    fields: Int = 5
+) {
+    AppShimmerTheme {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingLg)
+        ) {
+            repeat(fields) {
+                Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxWidth(0.35f)
+                            .height(appDimens().spacingMd)
+                    )
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(appDimens().minTouchHeight),
+                        shape = appDimens().fieldShape
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DashboardLoadingSkeleton(modifier: Modifier = Modifier) {
+    AppShimmerTheme {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingLg)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
+            ) {
+                repeat(2) {
+                    ShimmerBox(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(appDimens().statCardHeight),
+                        shape = appDimens().statShape
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
+            ) {
+                repeat(2) {
+                    ShimmerBox(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(appDimens().statCardHeight),
+                        shape = appDimens().statShape
+                    )
+                }
+            }
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(appDimens().chartHeightLine),
+                shape = appDimens().cardShape
+            )
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(appDimens().chartHeightPie),
+                shape = appDimens().cardShape
+            )
+            repeat(3) {
+                ShimmerListRow()
+            }
+        }
     }
 }
 
@@ -115,20 +186,20 @@ fun EmptyState(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(appDimens().spacing32),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             Icons.Outlined.Inbox,
             contentDescription = null,
-            modifier = Modifier.height(48.dp),
+            modifier = Modifier.height(appDimens().iconSizeListBox),
             tint = MaterialTheme.colorScheme.outline
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(appDimens().spacingMd))
         Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         if (description != null) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(appDimens().spacing6))
             Text(
                 description,
                 style = MaterialTheme.typography.bodyMedium,
@@ -137,7 +208,7 @@ fun EmptyState(
             )
         }
         if (actionLabel != null && onAction != null) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(appDimens().spacingLg))
             Button(onClick = onAction) { Text(actionLabel) }
         }
     }
@@ -152,17 +223,17 @@ fun ErrorState(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(appDimens().spacing32),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             Icons.Outlined.WifiOff,
             contentDescription = null,
-            modifier = Modifier.height(48.dp),
+            modifier = Modifier.height(appDimens().iconSizeListBox),
             tint = MaterialTheme.colorScheme.error
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(appDimens().spacingMd))
         Text(
             message,
             style = MaterialTheme.typography.bodyMedium,
@@ -170,7 +241,7 @@ fun ErrorState(
             textAlign = TextAlign.Center
         )
         if (onRetry != null) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(appDimens().spacingLg))
             OutlinedButton(onClick = onRetry) { Text("Retry") }
         }
     }

@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.saicomputer.sms.core.ui.BackdateToggle
+import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
 fun MarkCompleteDialog(
@@ -38,13 +39,13 @@ fun MarkCompleteDialog(
                 if (needsForce) {
                     Text("These topics are not complete:", style = MaterialTheme.typography.bodyMedium)
                     incompleteTopics.forEach { Text("• $it") }
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(appDimens().spacingSm))
                     Text("Complete anyway?")
                 } else {
                     Text("Mark this enrollment as completed?")
                 }
                 if (canBackdate) {
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(appDimens().spacingMd))
                     BackdateToggle(
                         enabled = backdate,
                         onEnabledChange = { backdate = it },
@@ -76,7 +77,7 @@ fun CancelEnrollmentDialog(
         text = {
             Column {
                 Text("This cancels the enrollment. This cannot be undone.")
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(appDimens().spacingSm))
                 OutlinedTextField(
                     value = reason,
                     onValueChange = { reason = it },
@@ -105,7 +106,7 @@ fun TopicCompleteDialog(
         text = {
             Column {
                 Text(topicName)
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(appDimens().spacingSm))
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -131,8 +132,8 @@ fun ExtendSubscriptionDialog(
         text = {
             Column {
                 Text("Extend by how many months?")
-                Spacer(Modifier.height(8.dp))
-                androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(Modifier.height(appDimens().spacingSm))
+                androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                     (1..4).forEach { m ->
                         androidx.compose.material3.FilterChip(
                             selected = months == m,

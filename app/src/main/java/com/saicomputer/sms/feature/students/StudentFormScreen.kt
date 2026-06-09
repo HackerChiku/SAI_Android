@@ -75,31 +75,23 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.REGISTRATION_SESSION_LABELS
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.format.Formatters
+import com.saicomputer.sms.core.ui.FormLoadingSkeleton
 import com.saicomputer.sms.core.ui.SnackbarController
-import com.saicomputer.sms.core.ui.theme.BaseWhite
-import com.saicomputer.sms.core.ui.theme.BrandBlue
-import com.saicomputer.sms.core.ui.theme.BrandBlueTint
-import com.saicomputer.sms.core.ui.theme.BrandRed
-import com.saicomputer.sms.core.ui.theme.OffWhite
-import com.saicomputer.sms.core.ui.theme.OnSurfaceVariantLightColor
-import com.saicomputer.sms.core.ui.theme.OutlineLight
-import com.saicomputer.sms.core.ui.theme.OutlineVariantLight
+import com.saicomputer.sms.core.ui.theme.appColors
 import com.saicomputer.sms.data.model.Gender
 import com.saicomputer.sms.data.model.RegistrationSession
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import com.saicomputer.sms.core.ui.theme.appDimens
 
-private val FieldShape = RoundedCornerShape(12.dp)
-private val CardShape = RoundedCornerShape(14.dp)
-private val BackdateOrange = Color(0xFFEA580C)
-private val BackdateOrangeTint = Color(0xFFFFF7ED)
 
 private val GENDER_LABELS = mapOf(
     Gender.Male to "Male",
@@ -139,25 +131,23 @@ fun StudentFormScreen(
     LaunchedEffect(studentId) { viewModel.initialize(studentId) }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = OutlineLight,
-        unfocusedBorderColor = OutlineVariantLight,
-        focusedContainerColor = BaseWhite,
-        unfocusedContainerColor = BaseWhite,
-        disabledContainerColor = BaseWhite,
-        focusedPlaceholderColor = OnSurfaceVariantLightColor,
-        unfocusedPlaceholderColor = OnSurfaceVariantLightColor
+        focusedBorderColor = MaterialTheme.colorScheme.outline,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        disabledContainerColor = MaterialTheme.colorScheme.surface,
+        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
-    Column(modifier = Modifier.fillMaxSize().background(OffWhite)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         StudentFormHeader(
             title = if (state.isEdit) "Edit Student" else "New Student",
             onBack = onBack
         )
 
         if (state.loading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            FormLoadingSkeleton(Modifier.fillMaxSize())
             return@Column
         }
 
@@ -165,8 +155,8 @@ fun StudentFormScreen(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             if (!state.isEdit && can(user, "system.backdate")) {
                 BackdateEntryCard(
@@ -186,15 +176,15 @@ fun StudentFormScreen(
                                 selected = state.registrationSession == session,
                                 onClick = { viewModel.onRegistrationSessionChange(session) }
                             )
-                            .padding(vertical = 2.dp),
+                            .padding(vertical = appDimens().spacingXxs),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = state.registrationSession == session,
                             onClick = { viewModel.onRegistrationSessionChange(session) },
                             colors = RadioButtonDefaults.colors(
-                                selectedColor = BrandRed,
-                                unselectedColor = OnSurfaceVariantLightColor
+                                selectedColor = MaterialTheme.colorScheme.tertiary,
+                                unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
                         Text(
@@ -204,7 +194,7 @@ fun StudentFormScreen(
                     }
                 }
                 if (state.registrationSession != RegistrationSession.NewRecord) {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(appDimens().spacingSm))
                     FormTextField(
                         label = "Old Registration Number",
                         required = true,
@@ -326,7 +316,7 @@ fun StudentFormScreen(
                     fileLabel = state.photoFileLabel,
                     onClick = { photoPicker.launch("image/*") }
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(appDimens().spacingMd))
                 DocumentUploadZone(
                     label = "Aadhaar Document Photo",
                     fileLabel = state.aadhaarFileLabel,
@@ -339,11 +329,11 @@ fun StudentFormScreen(
                     state.error!!,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    modifier = Modifier.padding(horizontal = appDimens().spacingXs)
                 )
             }
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(appDimens().spacingXs))
         }
 
         Button(
@@ -357,26 +347,26 @@ fun StudentFormScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            shape = FieldShape,
+                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
+            shape = appDimens().fieldShape,
             colors = ButtonDefaults.buttonColors(
-                containerColor = BrandRed,
-                contentColor = BaseWhite,
-                disabledContainerColor = BrandRed.copy(alpha = 0.4f),
-                disabledContentColor = BaseWhite.copy(alpha = 0.7f)
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
+                disabledContentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
             )
         ) {
             if (state.submitting) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(22.dp),
-                    strokeWidth = 2.dp,
-                    color = BaseWhite
+                    modifier = Modifier.size(appDimens().iconSizeListInner),
+                    strokeWidth = appDimens().spacingXxs,
+                    color = MaterialTheme.colorScheme.surface
                 )
             } else {
                 Text(
                     if (state.isEdit) "Save Changes" else "Create Student",
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    modifier = Modifier.padding(vertical = appDimens().spacingXs)
                 )
             }
         }
@@ -388,23 +378,23 @@ private fun StudentFormHeader(title: String, onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BrandBlue)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(horizontal = appDimens().spacingXs, vertical = appDimens().spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
             Icon(
                 Icons.AutoMirrored.Outlined.ArrowBack,
                 contentDescription = "Back",
-                tint = BaseWhite
+                tint = MaterialTheme.colorScheme.surface
             )
         }
         Text(
             title,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = BaseWhite,
-            modifier = Modifier.padding(start = 4.dp)
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.padding(start = appDimens().spacingXs)
         )
     }
 }
@@ -417,13 +407,13 @@ private fun FormSectionCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = BaseWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = appDimens().cardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             content()
@@ -437,7 +427,7 @@ private fun FormLabel(label: String, required: Boolean = false) {
         buildAnnotatedString {
             append(label)
             if (required) {
-                withStyle(SpanStyle(color = BrandRed)) { append(" *") }
+                withStyle(SpanStyle(color = MaterialTheme.colorScheme.tertiary)) { append(" *") }
             }
         },
         style = MaterialTheme.typography.bodyMedium,
@@ -462,7 +452,7 @@ private fun FormTextField(
     helperText: String? = null,
     fieldColors: androidx.compose.material3.TextFieldColors
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel(label, required)
         OutlinedTextField(
             value = value,
@@ -473,7 +463,7 @@ private fun FormTextField(
             minLines = minLines,
             keyboardOptions = keyboardOptions,
             isError = isError,
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
         )
@@ -481,7 +471,7 @@ private fun FormTextField(
             isError && errorText != null ->
                 Text(errorText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             helperText != null ->
-                Text(helperText, style = MaterialTheme.typography.bodySmall, color = OnSurfaceVariantLightColor)
+                Text(helperText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -496,7 +486,7 @@ private fun FormDateField(
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel(label)
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
@@ -505,9 +495,9 @@ private fun FormDateField(
                 readOnly = true,
                 placeholder = { Text("dd / mm / yyyy") },
                 trailingIcon = {
-                    Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = OnSurfaceVariantLightColor)
+                    Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 },
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = fieldColors,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -565,7 +555,7 @@ private fun GenderDropdown(
     var expanded by remember { mutableStateOf(false) }
     val display = selected?.let { GENDER_LABELS[it] } ?: "Select gender"
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing6)) {
         FormLabel("Gender")
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -577,9 +567,9 @@ private fun GenderDropdown(
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = {
-                    Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = OnSurfaceVariantLightColor)
+                    Icon(Icons.Outlined.UnfoldMore, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 },
-                shape = FieldShape,
+                shape = appDimens().fieldShape,
                 colors = fieldColors,
                 modifier = Modifier.menuAnchor().fillMaxWidth()
             )
@@ -611,38 +601,42 @@ private fun BackdateEntryCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .dashedBorder(BackdateOrange.copy(alpha = 0.65f), FieldShape)
-            .background(BackdateOrangeTint, FieldShape)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .dashedBorder(
+                appColors().warning.copy(alpha = 0.65f),
+                appDimens().strokeDashed,
+                appDimens().spacingMd
+            )
+            .background(appColors().warningContainer, appDimens().fieldShape)
+            .padding(appDimens().spacing14),
+        verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10)
         ) {
             Icon(
                 Icons.Outlined.CalendarMonth,
                 contentDescription = null,
-                tint = BackdateOrange,
-                modifier = Modifier.size(26.dp)
+                tint = appColors().warning,
+                modifier = Modifier.size(appDimens().iconSizeXl)
             )
             Text(
                 "Record as backdated entry",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = BackdateOrange,
+                color = appColors().warning,
                 modifier = Modifier.weight(1f)
             )
             Switch(
                 checked = enabled,
                 onCheckedChange = onEnabledChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = BaseWhite,
-                    checkedTrackColor = BackdateOrange,
-                    uncheckedThumbColor = BaseWhite,
-                    uncheckedTrackColor = OutlineVariantLight,
-                    uncheckedBorderColor = OutlineLight
+                    checkedThumbColor = MaterialTheme.colorScheme.surface,
+                    checkedTrackColor = appColors().warning,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.surface,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
                 )
             )
         }
@@ -652,19 +646,19 @@ private fun BackdateEntryCard(
                 onValueChange = onDateChange
             )
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm),
                 verticalAlignment = Alignment.Top
             ) {
                 Icon(
                     Icons.Outlined.WarningAmber,
                     contentDescription = null,
-                    tint = BackdateOrange,
-                    modifier = Modifier.size(18.dp)
+                    tint = appColors().warning,
+                    modifier = Modifier.size(appDimens().iconSizeSm)
                 )
                 Text(
                     "No confirmation email will be sent automatically. Receipt PDF will still be generated.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = BackdateOrange,
+                    color = appColors().warning,
                     lineHeight = MaterialTheme.typography.bodySmall.lineHeight
                 )
             }
@@ -680,12 +674,12 @@ private fun BackdateDateField(
 ) {
     var showPicker by remember { mutableStateOf(false) }
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = BackdateOrange,
-        unfocusedBorderColor = BackdateOrange.copy(alpha = 0.7f),
-        focusedContainerColor = BackdateOrangeTint,
-        unfocusedContainerColor = BackdateOrangeTint,
-        focusedTextColor = BackdateOrange,
-        unfocusedTextColor = BackdateOrange
+        focusedBorderColor = appColors().warning,
+        unfocusedBorderColor = appColors().warning.copy(alpha = 0.7f),
+        focusedContainerColor = appColors().warningContainer,
+        unfocusedContainerColor = appColors().warningContainer,
+        focusedTextColor = appColors().warning,
+        unfocusedTextColor = appColors().warning
     )
 
     Box(modifier = Modifier.fillMaxWidth()) {
@@ -694,12 +688,12 @@ private fun BackdateDateField(
             onValueChange = {},
             readOnly = true,
             placeholder = {
-                Text("dd/mm/yyyy", color = BackdateOrange.copy(alpha = 0.5f))
+                Text("dd/mm/yyyy", color = appColors().warning.copy(alpha = 0.5f))
             },
             trailingIcon = {
-                Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = BackdateOrange)
+                Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = appColors().warning)
             },
-            shape = FieldShape,
+            shape = appDimens().fieldShape,
             colors = fieldColors,
             modifier = Modifier.fillMaxWidth()
         )
@@ -751,22 +745,22 @@ private fun AadhaarInfoBanner() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BrandBlueTint, FieldShape)
-            .border(1.dp, BrandBlue.copy(alpha = 0.2f), FieldShape)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .background(MaterialTheme.colorScheme.primaryContainer, appDimens().fieldShape)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), appDimens().fieldShape)
+            .padding(appDimens().spacingMd),
+        horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10),
         verticalAlignment = Alignment.Top
     ) {
         Icon(
             Icons.Outlined.Info,
             contentDescription = null,
-            tint = BrandBlue,
-            modifier = Modifier.size(20.dp)
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(appDimens().iconSizeMd)
         )
         Text(
             "Aadhaar is masked on all screens. Only authorized roles can view the document.",
             style = MaterialTheme.typography.bodySmall,
-            color = BrandBlue
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -777,43 +771,47 @@ private fun DocumentUploadZone(
     fileLabel: String?,
     onClick: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
         FormLabel(label)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 120.dp)
-                .dashedBorder(OutlineVariantLight, FieldShape)
-                .background(OffWhite, FieldShape)
+                .heightIn(min = appDimens().formMinHeight)
+                .dashedBorder(
+                    MaterialTheme.colorScheme.outlineVariant,
+                    appDimens().strokeDashed,
+                    appDimens().spacingMd
+                )
+                .background(MaterialTheme.colorScheme.background, appDimens().fieldShape)
                 .clickable(onClick = onClick)
-                .padding(vertical = 24.dp),
+                .padding(vertical = appDimens().iconSizeLg),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
                 Icon(
                     Icons.Outlined.FileUpload,
                     contentDescription = null,
-                    tint = OnSurfaceVariantLightColor,
-                    modifier = Modifier.size(32.dp)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(appDimens().spacing32)
                 )
                 Text(
                     fileLabel ?: "Tap to upload",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = OnSurfaceVariantLightColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
 }
 
-private fun Modifier.dashedBorder(color: androidx.compose.ui.graphics.Color, shape: RoundedCornerShape): Modifier =
+private fun Modifier.dashedBorder(color: androidx.compose.ui.graphics.Color, strokeWidth: Dp, cornerRadius: Dp): Modifier =
     this.drawBehind {
-        val strokeWidth = 1.5.dp.toPx()
+        val strokeWidthPx = strokeWidth.toPx()
         val dash = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
-        val corner = 12.dp.toPx()
+        val corner = cornerRadius.toPx()
         drawRoundRect(
             color = color,
-            style = Stroke(width = strokeWidth, pathEffect = dash),
+            style = Stroke(width = strokeWidthPx, pathEffect = dash),
             cornerRadius = CornerRadius(corner, corner)
         )
     }
