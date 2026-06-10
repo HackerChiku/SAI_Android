@@ -23,6 +23,7 @@ import com.saicomputer.sms.data.dto.StudentUpdateInput
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.FileBase64Response
 import com.saicomputer.sms.data.model.Student
+import com.saicomputer.sms.data.model.StudentDocumentType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -53,6 +54,7 @@ class StudentsRepository @Inject constructor(
 ) {
     private val baseListCache = SessionCache<List<Student>>(registry)
     private val detailCache = KeyedSessionCache<String, StudentGetResponse>(registry)
+    private val documentCache = KeyedSessionCache<String, FileBase64Response>(registry)
 
     val baseListFlow: StateFlow<Cached<List<Student>>?> = baseListCache.flow
 
@@ -121,11 +123,36 @@ class StudentsRepository @Inject constructor(
     suspend fun getAadhaarNumber(studentId: String): AadhaarNumberResponse =
         api.call("students.getAadhaarNumber", StudentIdPayload(studentId))
 
+    fun getCachedDocument(studentId: String, type: StudentDocumentType): FileBase64Response? =
+        documentCache.get(documentKey(studentId, type))
+
+    fun isDocumentFresh(studentId: String, type: StudentDocumentType): Boolean =
+        documentCache.isFresh(documentKey(studentId, type))
+
+    fun invalidateDocument(studentId: String, type: StudentDocumentType) {
+        documentCache.remove(documentKey(studentId, type))
+    }
+
     suspend fun getPhotoBase64(studentId: String): FileBase64Response =
         api.call("students.getPhotoBase64", StudentIdCamelPayload(studentId))
 
     suspend fun getAadhaarBase64(studentId: String): FileBase64Response =
         api.call("students.getAadhaarBase64", StudentIdCamelPayload(studentId))
+
+    suspend fun refreshPhoto(studentId: String): FileBase64Response {
+        val result = getPhotoBase64(studentId)
+        documentCache.put(documentKey(studentId, StudentDocumentType.Photo), result)
+        return result
+    }
+
+    suspend fun refreshAadhaar(studentId: String): FileBase64Response {
+        val result = getAadhaarBase64(studentId)
+        documentCache.put(documentKey(studentId, StudentDocumentType.Aadhaar), result)
+        return result
+    }
+
+    private fun documentKey(studentId: String, type: StudentDocumentType): String =
+        "$studentId:${type.name}"
 
     suspend fun replacePhoto(input: FileUploadInput): ReplacePhotoResponse =
         api.call("students.replacePhoto", input)

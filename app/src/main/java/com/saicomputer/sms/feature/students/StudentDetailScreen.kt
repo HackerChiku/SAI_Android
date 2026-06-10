@@ -93,7 +93,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
+import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.CrossfadeUiState
 import com.saicomputer.sms.core.ui.CurrencyText
@@ -250,8 +252,7 @@ private fun StudentDetailContent(
             ) { ok, msg ->
                 snackbarController.show(scope, msg)
                 if (ok) {
-                    documentsViewModel.clearPhoto()
-                    documentsViewModel.loadPhoto(student.studentId)
+                    documentsViewModel.reloadPhotoAfterReplace(student.studentId)
                 }
             }
         }
@@ -450,53 +451,37 @@ private fun StudentDetailHeader(
     onEdit: (() -> Unit)?
 ) {
     AppTopBarBox {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(appDimens().iconSizeXxl)
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.size(appDimens().iconSizeListInner)
+        AppTitleBarRow(
+            leading = {
+                TitleBarBackButton(onBack = onBack)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
-            Text(
-                title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = if (onEdit != null) Modifier.weight(1f) else Modifier
-            )
-            if (onEdit != null) {
-                Box(
-                    modifier = Modifier
-                        .size(appDimens().iconSizeXxl)
-                        .clip(CircleShape)
-                        .clickable(onClick = onEdit),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Outlined.Edit,
-                        contentDescription = "Edit student",
-                        tint = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.size(appDimens().iconSizeListInner)
-                    )
+            },
+            actions = {
+                if (onEdit != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(appDimens().iconSizeXxl)
+                            .clip(CircleShape)
+                            .clickable(onClick = onEdit),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Edit,
+                            contentDescription = "Edit student",
+                            tint = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.size(appDimens().iconSizeListInner)
+                        )
+                    }
                 }
             }
-        }
+        )
     }
 }
 
@@ -860,8 +845,9 @@ private fun PaymentsTab(
         EmptyTabMessage("No payments recorded yet.")
         return
     }
+    val sortedPayments = payments.sortedByDescending { it.paymentDate }
     Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
-        payments.forEach { payment ->
+        sortedPayments.forEach { payment ->
             PaymentCard(
                 payment = payment,
                 canVoid = canVoid,

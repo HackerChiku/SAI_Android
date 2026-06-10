@@ -49,6 +49,7 @@ import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.format.REGISTRATION_SESSION_LABELS
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.CurrencyText
@@ -306,21 +307,19 @@ private fun PaymentsFilterDialog(
 @Composable
 private fun PaymentsListHeader(user: User?) {
     AppTopBarBox {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Payment History",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface
-            )
-            ProfileMenuButton(user = user)
-        }
+        AppTitleBarRow(
+            leading = {
+                Text(
+                    "Payment History",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface
+                )
+            },
+            actions = {
+                ProfileMenuButton(user = user)
+            }
+        )
     }
 }
 

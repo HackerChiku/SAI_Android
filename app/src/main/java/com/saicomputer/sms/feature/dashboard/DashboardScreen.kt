@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.SnackbarController
@@ -204,33 +205,26 @@ private fun DashboardHeader(
     val mutedColor = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
 
     AppTopBarBox(containerColor = headerBackground) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "Dashboard",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = titleColor
-                )
-                user?.fullName?.takeIf { it.isNotBlank() }?.let { name ->
+        AppTitleBarRow(
+            leading = {
+                Column {
                     Text(
-                        "Welcome back, $name 👋",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = mutedColor,
-                        modifier = Modifier.padding(top = appDimens().spacingXs)
+                        "Dashboard",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = titleColor
                     )
+                    user?.fullName?.takeIf { it.isNotBlank() }?.let { name ->
+                        Text(
+                            "Welcome, $name 👋",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = mutedColor,
+                            modifier = Modifier.padding(top = appDimens().spacingXs)
+                        )
+                    }
                 }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            },
+            actions = {
                 Box {
                     Row(
                         modifier = Modifier
@@ -275,7 +269,7 @@ private fun DashboardHeader(
                 }
                 ProfileMenuButton(user = user)
             }
-        }
+        )
     }
 }
 

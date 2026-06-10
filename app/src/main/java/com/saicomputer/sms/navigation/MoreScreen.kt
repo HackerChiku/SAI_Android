@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.saicomputer.sms.core.permission.can
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ProfileMenuButton
 import com.saicomputer.sms.data.model.User
@@ -95,37 +96,39 @@ fun MoreScreen(
 @Composable
 private fun MoreHeader(user: User?) {
     AppTopBarBox {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().iconSizeMd)
-        ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Text(
-                "More",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface
+        Column(modifier = Modifier.fillMaxWidth()) {
+            AppTitleBarRow(
+                leading = {
+                    Text(
+                        "More",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.surface
+                    )
+                },
+                actions = {
+                    ProfileMenuButton(user = user, size = appDimens().callButtonSize)
+                }
             )
-            ProfileMenuButton(user = user, size = appDimens().callButtonSize)
-        }
-        Text(
-            "Sai Computer Education",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.padding(top = appDimens().spacingLg)
-        )
-        Text(
-            "Student Management System",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
-            modifier = Modifier.padding(top = appDimens().spacingXs)
-        )
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = appDimens().iconSizeMd)
+                    .padding(bottom = appDimens().iconSizeMd)
+            ) {
+                Text(
+                    "Sai Computer Education",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.padding(top = appDimens().spacingLg)
+                )
+                Text(
+                    "Student Management System",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+                    modifier = Modifier.padding(top = appDimens().spacingXs)
+                )
+            }
         }
     }
 }

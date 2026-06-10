@@ -48,7 +48,7 @@ fun PhotoViewerDialog(
         if (uri != null) {
             viewModel.replacePhoto(studentId, uri, maxBytes) { ok, msg ->
                 onReplaced(msg)
-                if (ok) { viewModel.clearPhoto(); viewModel.loadPhoto(studentId) }
+                if (ok) { viewModel.reloadPhotoAfterReplace(studentId) }
             }
         }
     }
@@ -111,7 +111,7 @@ fun AadhaarViewerDialog(
         if (uri != null) {
             viewModel.replaceAadhaar(studentId, uri, "image/jpeg", null, maxBytes) { ok, msg ->
                 onReplaced(msg)
-                if (ok) { viewModel.clearAadhaar(); viewModel.loadAadhaar(studentId) }
+                if (ok) { viewModel.reloadAadhaarAfterReplace(studentId) }
             }
         }
     }

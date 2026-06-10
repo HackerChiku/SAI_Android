@@ -2,11 +2,13 @@ package com.saicomputer.sms.data.repo
 
 import com.saicomputer.sms.core.network.ApiClient
 import com.saicomputer.sms.core.session.Cached
+import com.saicomputer.sms.core.session.KeyedSessionCache
 import com.saicomputer.sms.core.session.SessionCache
 import com.saicomputer.sms.core.session.SessionCacheRegistry
 import kotlinx.coroutines.flow.StateFlow
 import com.saicomputer.sms.data.dto.BulkSaveCourseTopicsInput
 import com.saicomputer.sms.data.dto.CourseCreateInput
+import com.saicomputer.sms.data.dto.CourseDetailEntry
 import com.saicomputer.sms.data.dto.CourseGetResponse
 import com.saicomputer.sms.data.dto.CourseListResponse
 import com.saicomputer.sms.data.dto.CourseTopicsListResponse
@@ -37,12 +39,21 @@ class CoursesRepository @Inject constructor(
     registry: SessionCacheRegistry
 ) {
     private val listCache = SessionCache<List<Course>>(registry)
+    private val detailCache = KeyedSessionCache<String, CourseDetailEntry>(registry)
 
     val listFlow: StateFlow<Cached<List<Course>>?> = listCache.flow
 
     fun getCachedList(): List<Course>? = listCache.value
 
     fun isListFresh(): Boolean = listCache.isFresh()
+
+    fun getCachedCourse(courseId: String): CourseDetailEntry? = detailCache.get(courseId)
+
+    fun isCourseFresh(courseId: String): Boolean = detailCache.isFresh(courseId)
+
+    fun invalidateCourse(courseId: String) {
+        detailCache.remove(courseId)
+    }
 
     suspend fun list(): CourseListResponse = api.call("courses.list")
 
@@ -60,6 +71,18 @@ class CoursesRepository @Inject constructor(
     suspend fun get(courseId: String): CourseGetResponse {
         val data = api.callRaw("courses.get", api.json.encodeToJsonElement(CourseIdPayload(courseId)))
         return CourseGetResponse(api.json.decodeFromJsonElement<Course>(data))
+    }
+
+    suspend fun refreshCourse(courseId: String): CourseDetailEntry {
+        val course = get(courseId).course
+        val topics = if (course.hasTopics) {
+            runCatching { listTopics(courseId).topics }.getOrDefault(emptyList())
+        } else {
+            emptyList()
+        }
+        val entry = CourseDetailEntry(course, topics)
+        detailCache.put(courseId, entry)
+        return entry
     }
 
     suspend fun create(input: CourseCreateInput): Course = api.call("courses.create", input)

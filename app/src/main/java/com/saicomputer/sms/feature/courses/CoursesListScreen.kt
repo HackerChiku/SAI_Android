@@ -24,12 +24,16 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +51,7 @@ import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.Pill
+import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.SubpageTitleBar
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Course
@@ -54,16 +59,26 @@ import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.core.ui.theme.appDimens
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoursesListScreen(
     user: User? = null,
     onBack: () -> Unit,
     onNewCourse: () -> Unit,
     onOpenCourse: (String) -> Unit,
+    snackbarController: SnackbarController? = null,
     viewModel: CoursesListViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     val canCreate = can(user, "courses.create")
+
+    LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { message ->
+            snackbarController?.show(scope, message)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         CoursesListHeader(
@@ -81,37 +96,43 @@ fun CoursesListScreen(
         ) {
             Spacer(Modifier.height(appDimens().spacingMd))
 
-            when (val s = state) {
-                is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
-                is UiState.Error -> ErrorState(
-                    message = s.message,
-                    onRetry = viewModel::load,
-                    modifier = Modifier.fillMaxSize()
-                )
-                is UiState.Success -> {
-                    if (s.data.isEmpty()) {
-                        EmptyState(
-                            title = "No courses yet",
-                            actionLabel = if (canCreate) "New Course" else null,
-                            onAction = if (canCreate) onNewCourse else null,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = appDimens().spacingLg),
-                            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
-                        ) {
-                            items(s.data, key = { it.courseId }) { course ->
-                                CourseCard(
-                                    course = course,
-                                    onClick = { onOpenCourse(course.courseId) }
-                                )
-                            }
-                            if (canCreate) {
-                                item {
-                                    Spacer(Modifier.height(appDimens().spacingXs))
-                                    NewCourseButton(onClick = onNewCourse)
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = viewModel::manualRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when (val s = state) {
+                    is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
+                    is UiState.Error -> ErrorState(
+                        message = s.message,
+                        onRetry = { viewModel.load(force = true) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    is UiState.Success -> {
+                        if (s.data.isEmpty()) {
+                            EmptyState(
+                                title = "No courses yet",
+                                actionLabel = if (canCreate) "New Course" else null,
+                                onAction = if (canCreate) onNewCourse else null,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = appDimens().spacingLg),
+                                verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
+                            ) {
+                                items(s.data, key = { it.courseId }) { course ->
+                                    CourseCard(
+                                        course = course,
+                                        onClick = { onOpenCourse(course.courseId) }
+                                    )
+                                }
+                                if (canCreate) {
+                                    item {
+                                        Spacer(Modifier.height(appDimens().spacingXs))
+                                        NewCourseButton(onClick = onNewCourse)
+                                    }
                                 }
                             }
                         }

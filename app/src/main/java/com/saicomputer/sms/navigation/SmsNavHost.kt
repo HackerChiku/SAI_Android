@@ -228,7 +228,8 @@ fun SmsNavHost(
                     user = currentUser,
                     onBack = { navController.popBackStack() },
                     onNewCourse = { navController.navigate(Screen.CourseNew.route) },
-                    onOpenCourse = { id -> navController.navigate(Screen.CourseDetail.create(id)) }
+                    onOpenCourse = { id -> navController.navigate(Screen.CourseDetail.create(id)) },
+                    snackbarController = snackbarController
                 )
             }
             composable(
@@ -239,7 +240,8 @@ fun SmsNavHost(
                 CourseDetailScreen(
                     courseId = id,
                     onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate(Screen.CourseEdit.create(id)) }
+                    onEdit = { navController.navigate(Screen.CourseEdit.create(id)) },
+                    snackbarController = snackbarController
                 )
             }
             composable(Screen.CourseNew.route) {

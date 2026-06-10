@@ -44,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.EmptyState
@@ -240,20 +241,16 @@ private fun EnrollmentsFilterDialog(
 @Composable
 private fun EnrollmentsListHeader(user: User?, onNewEnrollment: () -> Unit) {
     AppTopBarBox {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Enrollments",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm), verticalAlignment = Alignment.CenterVertically) {
+        AppTitleBarRow(
+            leading = {
+                Text(
+                    "Enrollments",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface
+                )
+            },
+            actions = {
                 Box(
                     modifier = Modifier
                         .size(appDimens().iconSizeXxl)
@@ -266,7 +263,7 @@ private fun EnrollmentsListHeader(user: User?, onNewEnrollment: () -> Unit) {
                 }
                 ProfileMenuButton(user = user)
             }
-        }
+        )
     }
 }
 

@@ -63,6 +63,10 @@ class KeyedSessionCache<K, V>(
         _data.value = _data.value + (key to Cached(value))
     }
 
+    fun remove(key: K) {
+        _data.value = _data.value - key
+    }
+
     fun isFresh(key: K, ttlMs: Long = SessionCache.DEFAULT_TTL_MS): Boolean {
         val cached = _data.value[key] ?: return false
         return System.currentTimeMillis() - cached.savedAt < ttlMs

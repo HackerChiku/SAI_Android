@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
@@ -274,23 +275,16 @@ private fun StudentsListHeader(
     onNewStudent: () -> Unit
 ) {
     AppTopBarBox {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Students",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        AppTitleBarRow(
+            leading = {
+                Text(
+                    "Students",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface
+                )
+            },
+            actions = {
                 Box(
                     modifier = Modifier
                         .size(appDimens().iconSizeXxl)
@@ -322,7 +316,7 @@ private fun StudentsListHeader(
                 }
                 ProfileMenuButton(user = user)
             }
-        }
+        )
     }
 }
 

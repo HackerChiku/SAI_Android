@@ -1,7 +1,10 @@
 package com.saicomputer.sms.feature.courses
 
 import com.saicomputer.sms.core.ui.theme.appColors
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -11,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
@@ -22,16 +27,18 @@ import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Topic
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,6 +48,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
+import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.CurrencyText
 import com.saicomputer.sms.core.ui.CrossfadeUiState
 import com.saicomputer.sms.core.ui.ErrorState
@@ -48,7 +57,8 @@ import com.saicomputer.sms.core.ui.GenericBadge
 import com.saicomputer.sms.core.ui.ListItemCard
 import com.saicomputer.sms.core.ui.ListItemIconBox
 import com.saicomputer.sms.core.ui.LoadingSkeleton
-import com.saicomputer.sms.core.ui.SmsTopBar
+import com.saicomputer.sms.core.ui.SnackbarController
+import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.data.model.BillingType
 import com.saicomputer.sms.data.model.Course
 import com.saicomputer.sms.data.model.CourseTopic
@@ -61,38 +71,92 @@ fun CourseDetailScreen(
     courseId: String,
     onBack: () -> Unit,
     onEdit: () -> Unit,
+    snackbarController: SnackbarController? = null,
     viewModel: CourseDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     val canEdit = can(user, "courses.update")
+    val showEdit = canEdit && state is UiState.Success
 
-    val topBarTitle = when (val s = state) {
-        is UiState.Success -> s.data.course.courseName
-        else -> "Course"
+    LaunchedEffect(courseId) { viewModel.load(courseId) }
+    LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { message ->
+            snackbarController?.show(scope, message)
+        }
     }
 
-    androidx.compose.runtime.LaunchedEffect(courseId) { viewModel.load(courseId) }
-
-    Scaffold(
-        topBar = { SmsTopBar(title = topBarTitle, onBack = onBack) },
-        floatingActionButton = {
-            if (canEdit && state is UiState.Success) {
-                FloatingActionButton(onClick = onEdit) {
-                    Icon(Icons.Outlined.Edit, contentDescription = "Edit course")
+    CrossfadeUiState(
+        state = state,
+        loading = {
+            Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                CourseDetailHeader(title = "Course", onBack = onBack, onEdit = null)
+                LoadingSkeleton(modifier = Modifier.fillMaxSize())
+            }
+        },
+        error = { message ->
+            Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                CourseDetailHeader(title = "Course", onBack = onBack, onEdit = null)
+                ErrorState(message = message, onRetry = viewModel::reload, modifier = Modifier.fillMaxSize())
+            }
+        },
+        success = { data ->
+            Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                CourseDetailHeader(
+                    title = data.course.courseName,
+                    onBack = onBack,
+                    onEdit = if (showEdit) onEdit else null
+                )
+                PullToRefreshBox(
+                    isRefreshing = refreshing,
+                    onRefresh = viewModel::manualRefresh,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    CourseDetailContent(course = data.course, topics = data.topics)
                 }
             }
         }
-    ) { padding ->
-        CrossfadeUiState(
-            state = state,
-            modifier = Modifier.fillMaxSize().padding(padding),
-            loading = { LoadingSkeleton(modifier = Modifier.fillMaxSize()) },
-            error = { message ->
-                ErrorState(message = message, onRetry = viewModel::reload, modifier = Modifier.fillMaxSize())
+    )
+}
+
+@Composable
+private fun CourseDetailHeader(
+    title: String,
+    onBack: () -> Unit,
+    onEdit: (() -> Unit)?
+) {
+    AppTopBarBox {
+        AppTitleBarRow(
+            leading = {
+                TitleBarBackButton(onBack = onBack)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             },
-            success = { data ->
-                CourseDetailContent(course = data.course, topics = data.topics)
+            actions = {
+                if (onEdit != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(appDimens().iconSizeXxl)
+                            .clip(CircleShape)
+                            .clickable(onClick = onEdit),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Edit,
+                            contentDescription = "Edit course",
+                            tint = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.size(appDimens().iconSizeListInner)
+                        )
+                    }
+                }
             }
         )
     }

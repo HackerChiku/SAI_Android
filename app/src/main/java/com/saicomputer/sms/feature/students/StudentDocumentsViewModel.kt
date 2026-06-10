@@ -7,6 +7,7 @@ import com.saicomputer.sms.core.media.ImageCompressor
 import com.saicomputer.sms.core.network.ApiException
 import com.saicomputer.sms.data.dto.FileUploadInput
 import com.saicomputer.sms.data.model.FileBase64Response
+import com.saicomputer.sms.data.model.StudentDocumentType
 import com.saicomputer.sms.data.repo.StudentsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,36 +37,107 @@ class StudentDocumentsViewModel @Inject constructor(
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
 
-    /** Fetch photo base64 on demand (viewer open). */
+    private var activePhotoStudentId: String = ""
+    private var activeAadhaarStudentId: String = ""
+
     fun loadPhoto(studentId: String) {
+        activePhotoStudentId = studentId
+        val cached = repository.getCachedDocument(studentId, StudentDocumentType.Photo)
+        if (cached != null) {
+            _photo.value = FileViewState(file = cached)
+            refreshPhotoSilently(studentId)
+        } else {
+            fetchPhoto(studentId)
+        }
+    }
+
+    private fun fetchPhoto(studentId: String) {
+        activePhotoStudentId = studentId
         _photo.value = FileViewState(loading = true)
         viewModelScope.launch {
             try {
-                _photo.value = FileViewState(file = repository.getPhotoBase64(studentId))
+                val file = repository.refreshPhoto(studentId)
+                if (activePhotoStudentId == studentId) {
+                    _photo.value = FileViewState(file = file)
+                }
             } catch (e: ApiException) {
-                _photo.value = FileViewState(error = e.friendlyMessage())
+                if (activePhotoStudentId == studentId) {
+                    _photo.value = FileViewState(error = e.friendlyMessage())
+                }
             }
         }
     }
 
+    private fun refreshPhotoSilently(studentId: String) {
+        viewModelScope.launch {
+            runCatching { repository.refreshPhoto(studentId) }
+                .onSuccess { file ->
+                    if (activePhotoStudentId == studentId) {
+                        _photo.value = FileViewState(file = file)
+                    }
+                }
+        }
+    }
+
+    /** Clears VM state only; repository session cache is preserved. */
     fun clearPhoto() {
+        activePhotoStudentId = ""
         _photo.value = FileViewState()
     }
 
-    /** Fetch Aadhaar base64 ON OPEN (audit-logged); discard on close. */
     fun loadAadhaar(studentId: String) {
+        activeAadhaarStudentId = studentId
+        val cached = repository.getCachedDocument(studentId, StudentDocumentType.Aadhaar)
+        if (cached != null) {
+            _aadhaar.value = FileViewState(file = cached)
+            refreshAadhaarSilently(studentId)
+        } else {
+            fetchAadhaar(studentId)
+        }
+    }
+
+    private fun fetchAadhaar(studentId: String) {
+        activeAadhaarStudentId = studentId
         _aadhaar.value = FileViewState(loading = true)
         viewModelScope.launch {
             try {
-                _aadhaar.value = FileViewState(file = repository.getAadhaarBase64(studentId))
+                val file = repository.refreshAadhaar(studentId)
+                if (activeAadhaarStudentId == studentId) {
+                    _aadhaar.value = FileViewState(file = file)
+                }
             } catch (e: ApiException) {
-                _aadhaar.value = FileViewState(error = e.friendlyMessage())
+                if (activeAadhaarStudentId == studentId) {
+                    _aadhaar.value = FileViewState(error = e.friendlyMessage())
+                }
             }
         }
     }
 
+    private fun refreshAadhaarSilently(studentId: String) {
+        viewModelScope.launch {
+            runCatching { repository.refreshAadhaar(studentId) }
+                .onSuccess { file ->
+                    if (activeAadhaarStudentId == studentId) {
+                        _aadhaar.value = FileViewState(file = file)
+                    }
+                }
+        }
+    }
+
+    /** Clears VM state only; repository session cache is preserved. */
     fun clearAadhaar() {
+        activeAadhaarStudentId = ""
         _aadhaar.value = FileViewState()
+    }
+
+    fun reloadPhotoAfterReplace(studentId: String) {
+        repository.invalidateDocument(studentId, StudentDocumentType.Photo)
+        fetchPhoto(studentId)
+    }
+
+    fun reloadAadhaarAfterReplace(studentId: String) {
+        repository.invalidateDocument(studentId, StudentDocumentType.Aadhaar)
+        fetchAadhaar(studentId)
     }
 
     fun replacePhoto(

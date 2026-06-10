@@ -82,7 +82,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
+import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.CurrencyText
 import com.saicomputer.sms.core.ui.ErrorState
@@ -357,36 +359,19 @@ private fun EnrollmentDetailContent(
 @Composable
 private fun EnrollmentDetailHeader(title: String, onBack: () -> Unit) {
     AppTopBarBox {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(appDimens().iconSizeXxl)
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.size(appDimens().iconSizeListInner)
+        AppTitleBarRow(
+            leading = {
+                TitleBarBackButton(onBack = onBack)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            Text(
-                title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        )
     }
 }
 

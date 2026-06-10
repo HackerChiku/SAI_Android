@@ -231,6 +231,9 @@ class CourseFormViewModel @Inject constructor(
                 } else {
                     onMessage("Course saved")
                 }
+                repository.invalidateCourse(savedId)
+                runCatching { repository.refreshList() }
+                runCatching { repository.refreshCourse(savedId) }
                 _state.update { it.copy(submitting = false) }
                 onSaved(savedId)
             } catch (e: ApiException) {

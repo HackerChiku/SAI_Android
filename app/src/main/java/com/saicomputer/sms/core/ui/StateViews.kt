@@ -2,14 +2,12 @@ package com.saicomputer.sms.core.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.WifiOff
@@ -30,15 +28,11 @@ fun LoadingSkeleton(
     rows: Int = 6
 ) {
     AppShimmerTheme {
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(appDimens().spacingLg),
-            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd),
-            userScrollEnabled = false,
-            contentPadding = PaddingValues(appDimens().spacingNone)
+        Column(
+            modifier = modifier.padding(appDimens().spacingLg),
+            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
         ) {
-            items(rows) {
+            repeat(rows) {
                 ShimmerListRow()
             }
         }
