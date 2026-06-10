@@ -4,8 +4,6 @@ import com.saicomputer.sms.core.ui.studentStatusColor
 import com.saicomputer.sms.core.ui.theme.appColors
 import android.content.Intent
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -106,6 +104,7 @@ import com.saicomputer.sms.core.ui.ThemedShimmerCircle
 import com.saicomputer.sms.core.ui.PaymentActionButtons
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SnackbarController
+import com.saicomputer.sms.core.ui.rememberImagePicker
 import com.saicomputer.sms.core.ui.StudentPhotoAvatar
 import com.saicomputer.sms.core.ui.rememberBase64ImageBitmap
 import com.saicomputer.sms.data.model.BillingType
@@ -243,20 +242,23 @@ private fun StudentDetailContent(
     val documentsBusy by documentsViewModel.busy.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            documentsViewModel.replacePhoto(
-                student.studentId,
-                uri,
-                StudentFormViewModel.PHOTO_MAX_BYTES
-            ) { ok, msg ->
-                snackbarController.show(scope, msg)
-                if (ok) {
-                    documentsViewModel.reloadPhotoAfterReplace(student.studentId)
+    val photoPicker = rememberImagePicker(
+        chooserTitle = "Add photo",
+        onImagePicked = { uri ->
+            if (uri != null) {
+                documentsViewModel.replacePhoto(
+                    student.studentId,
+                    uri,
+                    StudentFormViewModel.PHOTO_MAX_BYTES
+                ) { ok, msg ->
+                    snackbarController.show(scope, msg)
+                    if (ok) {
+                        documentsViewModel.reloadPhotoAfterReplace(student.studentId)
+                    }
                 }
             }
         }
-    }
+    )
 
     DisposableEffect(student.studentId) {
         documentsViewModel.loadPhoto(student.studentId)
@@ -357,7 +359,7 @@ private fun StudentDetailContent(
                         photoBase64 = photoState.file?.base64,
                         photoLoading = photoState.loading,
                         busy = documentsBusy,
-                        onReplacePhoto = { photoPicker.launch("image/*") },
+                        onReplacePhoto = { photoPicker.showChooser() },
                         onViewAadhaar = { showAadhaar = true }
                     )
                 }

@@ -1,7 +1,5 @@
 package com.saicomputer.sms.feature.students
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -84,6 +82,8 @@ import com.saicomputer.sms.core.ui.BackdateEntryCard
 import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.core.ui.FormLoadingSkeleton
 import com.saicomputer.sms.core.ui.SnackbarController
+import com.saicomputer.sms.core.ui.rememberImagePicker
+import com.saicomputer.sms.core.ui.resolveUriDisplayName
 import com.saicomputer.sms.core.ui.theme.appColors
 import com.saicomputer.sms.data.model.Gender
 import com.saicomputer.sms.data.model.RegistrationSession
@@ -113,20 +113,20 @@ fun StudentFormScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        val label = uri?.let { runCatching { context.contentResolver.query(it, null, null, null, null)?.use { c ->
-            val idx = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-            if (idx >= 0 && c.moveToFirst()) c.getString(idx) else null
-        } }.getOrNull() } ?: uri?.lastPathSegment
-        viewModel.onPhotoPicked(uri, label)
-    }
-    val aadhaarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        val label = uri?.let { runCatching { context.contentResolver.query(it, null, null, null, null)?.use { c ->
-            val idx = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-            if (idx >= 0 && c.moveToFirst()) c.getString(idx) else null
-        } }.getOrNull() } ?: uri?.lastPathSegment
-        viewModel.onAadhaarPicked(uri, label)
-    }
+    val photoPicker = rememberImagePicker(
+        chooserTitle = "Add photo",
+        onImagePicked = { uri ->
+            val label = uri?.let { resolveUriDisplayName(context, it) }
+            viewModel.onPhotoPicked(uri, label)
+        }
+    )
+    val aadhaarPicker = rememberImagePicker(
+        chooserTitle = "Add document",
+        onImagePicked = { uri ->
+            val label = uri?.let { resolveUriDisplayName(context, it) }
+            viewModel.onAadhaarPicked(uri, label)
+        }
+    )
 
     LaunchedEffect(studentId) { viewModel.initialize(studentId) }
 
@@ -292,13 +292,13 @@ fun StudentFormScreen(
                 DocumentUploadZone(
                     label = "Student Photo",
                     fileLabel = state.photoFileLabel,
-                    onClick = { photoPicker.launch("image/*") }
+                    onClick = { photoPicker.showChooser() }
                 )
                 Spacer(Modifier.height(appDimens().spacingMd))
                 DocumentUploadZone(
                     label = "Aadhaar Document Photo",
                     fileLabel = state.aadhaarFileLabel,
-                    onClick = { aadhaarPicker.launch("image/*") }
+                    onClick = { aadhaarPicker.showChooser() }
                 )
             }
 
