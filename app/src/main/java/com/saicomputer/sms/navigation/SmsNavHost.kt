@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.saicomputer.sms.core.ui.LoadingSkeleton
+import com.saicomputer.sms.feature.splash.SplashScreen
 import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,8 +59,12 @@ fun SmsNavHost(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route.orEmpty()
 
-    if (bootstrap.loading) {
-        LoadingSkeleton(modifier = modifier.fillMaxSize())
+    if (bootstrap.loading || bootstrap.error != null) {
+        SplashScreen(
+            error = bootstrap.error,
+            onRetry = if (bootstrap.error != null) appViewModel::retry else null,
+            modifier = modifier.fillMaxSize()
+        )
         return
     }
 
@@ -148,7 +152,8 @@ fun SmsNavHost(
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
                     user = currentUser,
-                    onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) }
+                    onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
+                    snackbarController = snackbarController
                 )
             }
 
@@ -156,7 +161,8 @@ fun SmsNavHost(
                 StudentsListScreen(
                     user = currentUser,
                     onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
-                    onNewStudent = { navController.navigate(Screen.StudentNew.route) }
+                    onNewStudent = { navController.navigate(Screen.StudentNew.route) },
+                    snackbarController = snackbarController
                 )
             }
 
@@ -212,7 +218,8 @@ fun SmsNavHost(
                 StudentsListScreen(
                     user = currentUser,
                     onOpenStudent = { id -> navController.navigate(Screen.StudentDetail.create(id)) },
-                    onNewStudent = { navController.navigate(Screen.StudentNew.route) }
+                    onNewStudent = { navController.navigate(Screen.StudentNew.route) },
+                    snackbarController = snackbarController
                 )
             }
 
@@ -221,7 +228,8 @@ fun SmsNavHost(
                     user = currentUser,
                     onBack = { navController.popBackStack() },
                     onNewCourse = { navController.navigate(Screen.CourseNew.route) },
-                    onOpenCourse = { id -> navController.navigate(Screen.CourseDetail.create(id)) }
+                    onOpenCourse = { id -> navController.navigate(Screen.CourseDetail.create(id)) },
+                    snackbarController = snackbarController
                 )
             }
             composable(
@@ -232,7 +240,8 @@ fun SmsNavHost(
                 CourseDetailScreen(
                     courseId = id,
                     onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate(Screen.CourseEdit.create(id)) }
+                    onEdit = { navController.navigate(Screen.CourseEdit.create(id)) },
+                    snackbarController = snackbarController
                 )
             }
             composable(Screen.CourseNew.route) {
@@ -259,7 +268,8 @@ fun SmsNavHost(
                 EnrollmentsListScreen(
                     user = currentUser,
                     onNewEnrollment = { navController.navigate(Screen.EnrollmentNew.create()) },
-                    onOpenEnrollment = { eid -> navController.navigate(Screen.EnrollmentDetail.create(eid)) }
+                    onOpenEnrollment = { eid -> navController.navigate(Screen.EnrollmentDetail.create(eid)) },
+                    snackbarController = snackbarController
                 )
             }
 

@@ -39,7 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
+import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.core.ui.ProfileSectionHeader
 import com.saicomputer.sms.core.ui.ThemeModeSelector
 import com.saicomputer.sms.data.model.User
@@ -59,34 +61,17 @@ fun UserProfileScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         AppTopBarBox {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(appDimens().iconSizeXxl)
-                        .clip(CircleShape)
-                        .clickable(onClick = onBack),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.size(appDimens().iconSizeListInner)
+            AppTitleBarRow(
+                leading = {
+                    TitleBarBackButton(onBack = onBack)
+                    Text(
+                        "Profile",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.surface
                     )
                 }
-                Text(
-                    "Profile",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.surface
-                )
-            }
+            )
         }
 
         Column(

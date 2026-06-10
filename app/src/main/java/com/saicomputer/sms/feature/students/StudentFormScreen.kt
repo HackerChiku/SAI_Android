@@ -1,7 +1,5 @@
 package com.saicomputer.sms.feature.students
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,18 +17,16 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.UnfoldMore
-import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -43,15 +39,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Switch
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -64,12 +55,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -82,8 +76,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.REGISTRATION_SESSION_LABELS
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.format.Formatters
+import com.saicomputer.sms.core.ui.AppTitleBarRow
+import com.saicomputer.sms.core.ui.AppTopBarBox
+import com.saicomputer.sms.core.ui.BackdateEntryCard
+import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.core.ui.FormLoadingSkeleton
 import com.saicomputer.sms.core.ui.SnackbarController
+import com.saicomputer.sms.core.ui.rememberImagePicker
+import com.saicomputer.sms.core.ui.resolveUriDisplayName
 import com.saicomputer.sms.core.ui.theme.appColors
 import com.saicomputer.sms.data.model.Gender
 import com.saicomputer.sms.data.model.RegistrationSession
@@ -113,20 +113,20 @@ fun StudentFormScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        val label = uri?.let { runCatching { context.contentResolver.query(it, null, null, null, null)?.use { c ->
-            val idx = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-            if (idx >= 0 && c.moveToFirst()) c.getString(idx) else null
-        } }.getOrNull() } ?: uri?.lastPathSegment
-        viewModel.onPhotoPicked(uri, label)
-    }
-    val aadhaarPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        val label = uri?.let { runCatching { context.contentResolver.query(it, null, null, null, null)?.use { c ->
-            val idx = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-            if (idx >= 0 && c.moveToFirst()) c.getString(idx) else null
-        } }.getOrNull() } ?: uri?.lastPathSegment
-        viewModel.onAadhaarPicked(uri, label)
-    }
+    val photoPicker = rememberImagePicker(
+        chooserTitle = "Add photo",
+        onImagePicked = { uri ->
+            val label = uri?.let { resolveUriDisplayName(context, it) }
+            viewModel.onPhotoPicked(uri, label)
+        }
+    )
+    val aadhaarPicker = rememberImagePicker(
+        chooserTitle = "Add document",
+        onImagePicked = { uri ->
+            val label = uri?.let { resolveUriDisplayName(context, it) }
+            viewModel.onAadhaarPicked(uri, label)
+        }
+    )
 
     LaunchedEffect(studentId) { viewModel.initialize(studentId) }
 
@@ -167,34 +167,12 @@ fun StudentFormScreen(
                 )
             }
 
-            FormSectionCard(title = "Registration Session") {
-                RegistrationSession.entries.forEach { session ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = state.registrationSession == session,
-                                onClick = { viewModel.onRegistrationSessionChange(session) }
-                            )
-                            .padding(vertical = appDimens().spacingXxs),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = state.registrationSession == session,
-                            onClick = { viewModel.onRegistrationSessionChange(session) },
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.tertiary,
-                                unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                        Text(
-                            REGISTRATION_SESSION_LABELS[session] ?: session.name,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                }
+            FormSectionCard(title = "Registration Session", compact = true) {
+                RegistrationSessionSelector(
+                    selected = state.registrationSession,
+                    onSelected = viewModel::onRegistrationSessionChange
+                )
                 if (state.registrationSession != RegistrationSession.NewRecord) {
-                    Spacer(Modifier.height(appDimens().spacingSm))
                     FormTextField(
                         label = "Old Registration Number",
                         required = true,
@@ -314,13 +292,13 @@ fun StudentFormScreen(
                 DocumentUploadZone(
                     label = "Student Photo",
                     fileLabel = state.photoFileLabel,
-                    onClick = { photoPicker.launch("image/*") }
+                    onClick = { photoPicker.showChooser() }
                 )
                 Spacer(Modifier.height(appDimens().spacingMd))
                 DocumentUploadZone(
                     label = "Aadhaar Document Photo",
                     fileLabel = state.aadhaarFileLabel,
-                    onClick = { aadhaarPicker.launch("image/*") }
+                    onClick = { aadhaarPicker.showChooser() }
                 )
             }
 
@@ -333,41 +311,40 @@ fun StudentFormScreen(
                 )
             }
 
-            Spacer(Modifier.height(appDimens().spacingXs))
-        }
-
-        Button(
-            onClick = {
-                viewModel.submit { id ->
-                    snackbarController.show(scope, if (state.isEdit) "Student updated" else "Student created")
-                    onSaved(id)
+            Spacer(Modifier.height(appDimens().spacingMd))
+            Button(
+                onClick = {
+                    viewModel.submit { id ->
+                        snackbarController.show(scope, if (state.isEdit) "Student updated" else "Student created")
+                        onSaved(id)
+                    }
+                },
+                enabled = state.canSubmit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(vertical = appDimens().spacingMd),
+                shape = appDimens().fieldShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
+                    disabledContentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+                )
+            ) {
+                if (state.submitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(appDimens().iconSizeListInner),
+                        strokeWidth = appDimens().spacingXxs,
+                        color = MaterialTheme.colorScheme.surface
+                    )
+                } else {
+                    Text(
+                        if (state.isEdit) "Save Changes" else "Create Student",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = appDimens().spacingXs)
+                    )
                 }
-            },
-            enabled = state.canSubmit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
-            shape = appDimens().fieldShape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = MaterialTheme.colorScheme.surface,
-                disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
-                disabledContentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-            )
-        ) {
-            if (state.submitting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(appDimens().iconSizeListInner),
-                    strokeWidth = appDimens().spacingXxs,
-                    color = MaterialTheme.colorScheme.surface
-                )
-            } else {
-                Text(
-                    if (state.isEdit) "Save Changes" else "Create Student",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = appDimens().spacingXs)
-                )
             }
         }
     }
@@ -375,26 +352,19 @@ fun StudentFormScreen(
 
 @Composable
 private fun StudentFormHeader(title: String, onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(horizontal = appDimens().spacingXs, vertical = appDimens().spacingSm),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                Icons.AutoMirrored.Outlined.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.surface
-            )
-        }
-        Text(
-            title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.padding(start = appDimens().spacingXs)
+    AppTopBarBox {
+        AppTitleBarRow(
+            leading = {
+                TitleBarBackButton(onBack = onBack)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         )
     }
 }
@@ -403,8 +373,11 @@ private fun StudentFormHeader(title: String, onBack: () -> Unit) {
 private fun FormSectionCard(
     title: String,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val padding = if (compact) appDimens().spacingMd else appDimens().spacingLg
+    val spacing = if (compact) appDimens().spacingSm else appDimens().spacingMd
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = appDimens().cardShape,
@@ -412,11 +385,50 @@ private fun FormSectionCard(
         elevation = CardDefaults.cardElevation(defaultElevation = appDimens().strokeHairline)
     ) {
         Column(
-            modifier = Modifier.padding(appDimens().spacingLg),
-            verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
+            modifier = Modifier.padding(padding),
+            verticalArrangement = Arrangement.spacedBy(spacing)
         ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                title,
+                style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
             content()
+        }
+    }
+}
+
+@Composable
+private fun RegistrationSessionSelector(
+    selected: RegistrationSession,
+    onSelected: (RegistrationSession) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(appDimens().fieldShape)
+            .border(appDimens().strokeHairline, MaterialTheme.colorScheme.outlineVariant, appDimens().fieldShape)
+    ) {
+        RegistrationSession.entries.forEach { session ->
+            val active = selected == session
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                    .clickable { onSelected(session) }
+                    .padding(vertical = appDimens().spacingSm, horizontal = appDimens().spacingXxs),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    REGISTRATION_SESSION_LABELS[session] ?: session.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (active) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -592,155 +604,6 @@ private fun GenderDropdown(
 }
 
 @Composable
-private fun BackdateEntryCard(
-    enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit,
-    date: String?,
-    onDateChange: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .dashedBorder(
-                appColors().warning.copy(alpha = 0.65f),
-                appDimens().strokeDashed,
-                appDimens().spacingMd
-            )
-            .background(appColors().warningContainer, appDimens().fieldShape)
-            .padding(appDimens().spacing14),
-        verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10)
-        ) {
-            Icon(
-                Icons.Outlined.CalendarMonth,
-                contentDescription = null,
-                tint = appColors().warning,
-                modifier = Modifier.size(appDimens().iconSizeXl)
-            )
-            Text(
-                "Record as backdated entry",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = appColors().warning,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(
-                checked = enabled,
-                onCheckedChange = onEnabledChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.surface,
-                    checkedTrackColor = appColors().warning,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.surface,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant,
-                    uncheckedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-        }
-        if (enabled) {
-            BackdateDateField(
-                value = date,
-                onValueChange = onDateChange
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm),
-                verticalAlignment = Alignment.Top
-            ) {
-                Icon(
-                    Icons.Outlined.WarningAmber,
-                    contentDescription = null,
-                    tint = appColors().warning,
-                    modifier = Modifier.size(appDimens().iconSizeSm)
-                )
-                Text(
-                    "No confirmation email will be sent automatically. Receipt PDF will still be generated.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = appColors().warning,
-                    lineHeight = MaterialTheme.typography.bodySmall.lineHeight
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun BackdateDateField(
-    value: String?,
-    onValueChange: (String) -> Unit
-) {
-    var showPicker by remember { mutableStateOf(false) }
-    val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = appColors().warning,
-        unfocusedBorderColor = appColors().warning.copy(alpha = 0.7f),
-        focusedContainerColor = appColors().warningContainer,
-        unfocusedContainerColor = appColors().warningContainer,
-        focusedTextColor = appColors().warning,
-        unfocusedTextColor = appColors().warning
-    )
-
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
-            value = formatBackdateDisplay(value),
-            onValueChange = {},
-            readOnly = true,
-            placeholder = {
-                Text("dd/mm/yyyy", color = appColors().warning.copy(alpha = 0.5f))
-            },
-            trailingIcon = {
-                Icon(Icons.Outlined.CalendarToday, contentDescription = null, tint = appColors().warning)
-            },
-            shape = appDimens().fieldShape,
-            colors = fieldColors,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { showPicker = true }
-        )
-    }
-
-    if (showPicker) {
-        val initialMillis = value?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-            ?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli()
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = initialMillis,
-            selectableDates = object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                    val today = LocalDate.now(Formatters.IST)
-                        .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-                    return utcTimeMillis <= today
-                }
-            }
-        )
-        DatePickerDialog(
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let { millis ->
-                        val picked = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                        onValueChange(picked.toString())
-                    }
-                    showPicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text("Cancel") }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
-    }
-}
-
-@Composable
 private fun AadhaarInfoBanner() {
     Row(
         modifier = Modifier
@@ -821,13 +684,5 @@ private fun formatDobDisplay(iso: String?): String {
     return runCatching {
         val d = LocalDate.parse(iso)
         String.format("%02d / %02d / %04d", d.dayOfMonth, d.monthValue, d.year)
-    }.getOrDefault("")
-}
-
-private fun formatBackdateDisplay(iso: String?): String {
-    if (iso.isNullOrBlank()) return ""
-    return runCatching {
-        val d = LocalDate.parse(iso)
-        String.format("%02d/%02d/%04d", d.dayOfMonth, d.monthValue, d.year)
     }.getOrDefault("")
 }

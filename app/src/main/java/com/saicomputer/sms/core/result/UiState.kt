@@ -1,7 +1,7 @@
 package com.saicomputer.sms.core.result
 
 /**
- * Generic screen state for one-shot loads. Lists that page use Paging 3 instead.
+ * Generic screen state for one-shot and cached list loads.
  */
 sealed interface UiState<out T> {
     data object Loading : UiState<Nothing>

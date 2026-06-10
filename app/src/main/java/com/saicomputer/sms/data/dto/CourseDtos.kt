@@ -17,6 +17,9 @@ data class CourseListResponse(
 /** courses.get returns the course DTO flat; the repository decodes it and wraps here. */
 data class CourseGetResponse(val course: Course)
 
+/** Cached course detail payload (course + optional topics). */
+data class CourseDetailEntry(val course: Course, val topics: List<CourseTopic> = emptyList())
+
 @Serializable
 data class CourseCreateInput(
     @SerialName("CourseName") val courseName: String,

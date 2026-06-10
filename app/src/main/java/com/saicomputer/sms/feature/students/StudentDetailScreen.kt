@@ -4,8 +4,6 @@ import com.saicomputer.sms.core.ui.studentStatusColor
 import com.saicomputer.sms.core.ui.theme.appColors
 import android.content.Intent
 import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,6 +54,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
@@ -92,7 +91,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
+import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.CrossfadeUiState
 import com.saicomputer.sms.core.ui.CurrencyText
@@ -103,9 +104,11 @@ import com.saicomputer.sms.core.ui.ThemedShimmerCircle
 import com.saicomputer.sms.core.ui.PaymentActionButtons
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.SnackbarController
+import com.saicomputer.sms.core.ui.rememberImagePicker
 import com.saicomputer.sms.core.ui.StudentPhotoAvatar
 import com.saicomputer.sms.core.ui.rememberBase64ImageBitmap
 import com.saicomputer.sms.data.model.BillingType
+import com.saicomputer.sms.data.model.Course
 import com.saicomputer.sms.data.model.Enrollment
 import com.saicomputer.sms.data.model.EnrollmentStatus
 import com.saicomputer.sms.data.model.Gender
@@ -116,6 +119,7 @@ import com.saicomputer.sms.data.model.RegistrationSession
 import com.saicomputer.sms.data.model.Student
 import com.saicomputer.sms.data.model.StudentStatus
 import com.saicomputer.sms.data.model.TERMINAL_STUDENT_STATUSES
+import com.saicomputer.sms.feature.enrollments.displayCourseName
 import kotlinx.coroutines.CoroutineScope
 import com.saicomputer.sms.core.ui.theme.appDimens
 
@@ -135,7 +139,7 @@ private val GENDER_LABELS = mapOf(
     Gender.PreferNotToSay to "Prefer not to say"
 )
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun StudentDetailScreen(
     studentId: String,
@@ -150,9 +154,14 @@ fun StudentDetailScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
+    val coursesById by viewModel.coursesById.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     androidx.compose.runtime.LaunchedEffect(studentId) { viewModel.load(studentId) }
+    androidx.compose.runtime.LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { snackbarController.show(scope, it) }
+    }
 
     CrossfadeUiState(
         state = state,
@@ -169,24 +178,31 @@ fun StudentDetailScreen(
             }
         },
         success = { data ->
-            StudentDetailContent(
-                student = data.student,
-                enrollments = data.enrollments.orEmpty(),
-                payments = data.payments.orEmpty(),
-                canChangeStatus = can(user, "students.changeStatus"),
-                canEdit = true,
-                canVoid = can(user, "payments.void"),
-                canReplaceAadhaar = can(user, "students.replaceAadhaar"),
-                onBack = onBack,
-                onEdit = onEdit,
-                onNewEnrollment = onNewEnrollment,
-                onOpenEnrollment = onOpenEnrollment,
-                onRecordPayment = onRecordPayment,
-                documentsViewModel = documentsViewModel,
-                viewModel = viewModel,
-                snackbarController = snackbarController,
-                scope = scope
-            )
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = viewModel::manualRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                StudentDetailContent(
+                    student = data.student,
+                    enrollments = data.enrollments.orEmpty(),
+                    payments = data.payments.orEmpty(),
+                    coursesById = coursesById,
+                    canChangeStatus = can(user, "students.changeStatus"),
+                    canEdit = true,
+                    canVoid = can(user, "payments.void"),
+                    canReplaceAadhaar = can(user, "students.replaceAadhaar"),
+                    onBack = onBack,
+                    onEdit = onEdit,
+                    onNewEnrollment = onNewEnrollment,
+                    onOpenEnrollment = onOpenEnrollment,
+                    onRecordPayment = onRecordPayment,
+                    documentsViewModel = documentsViewModel,
+                    viewModel = viewModel,
+                    snackbarController = snackbarController,
+                    scope = scope
+                )
+            }
         }
     )
 }
@@ -197,6 +213,7 @@ private fun StudentDetailContent(
     student: Student,
     enrollments: List<Enrollment>,
     payments: List<Payment>,
+    coursesById: Map<String, Course>,
     canChangeStatus: Boolean,
     canEdit: Boolean,
     canVoid: Boolean,
@@ -225,21 +242,23 @@ private fun StudentDetailContent(
     val documentsBusy by documentsViewModel.busy.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) {
-            documentsViewModel.replacePhoto(
-                student.studentId,
-                uri,
-                StudentFormViewModel.PHOTO_MAX_BYTES
-            ) { ok, msg ->
-                snackbarController.show(scope, msg)
-                if (ok) {
-                    documentsViewModel.clearPhoto()
-                    documentsViewModel.loadPhoto(student.studentId)
+    val photoPicker = rememberImagePicker(
+        chooserTitle = "Add photo",
+        onImagePicked = { uri ->
+            if (uri != null) {
+                documentsViewModel.replacePhoto(
+                    student.studentId,
+                    uri,
+                    StudentFormViewModel.PHOTO_MAX_BYTES
+                ) { ok, msg ->
+                    snackbarController.show(scope, msg)
+                    if (ok) {
+                        documentsViewModel.reloadPhotoAfterReplace(student.studentId)
+                    }
                 }
             }
         }
-    }
+    )
 
     DisposableEffect(student.studentId) {
         documentsViewModel.loadPhoto(student.studentId)
@@ -310,7 +329,7 @@ private fun StudentDetailContent(
             ) {
                 when (selectedTab) {
                     0 -> ProfileTab(student)
-                    1 -> EnrollmentsTab(enrollments, onOpenEnrollment)
+                    1 -> EnrollmentsTab(enrollments, coursesById, onOpenEnrollment)
                     2 -> PaymentsTab(
                         payments = payments,
                         canVoid = canVoid,
@@ -340,7 +359,7 @@ private fun StudentDetailContent(
                         photoBase64 = photoState.file?.base64,
                         photoLoading = photoState.loading,
                         busy = documentsBusy,
-                        onReplacePhoto = { photoPicker.launch("image/*") },
+                        onReplacePhoto = { photoPicker.showChooser() },
                         onViewAadhaar = { showAadhaar = true }
                     )
                 }
@@ -434,53 +453,37 @@ private fun StudentDetailHeader(
     onEdit: (() -> Unit)?
 ) {
     AppTopBarBox {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(appDimens().iconSizeXxl)
-                    .clip(CircleShape)
-                    .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.size(appDimens().iconSizeListInner)
+        AppTitleBarRow(
+            leading = {
+                TitleBarBackButton(onBack = onBack)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
-            Text(
-                title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = if (onEdit != null) Modifier.weight(1f) else Modifier
-            )
-            if (onEdit != null) {
-                Box(
-                    modifier = Modifier
-                        .size(appDimens().iconSizeXxl)
-                        .clip(CircleShape)
-                        .clickable(onClick = onEdit),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Outlined.Edit,
-                        contentDescription = "Edit student",
-                        tint = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.size(appDimens().iconSizeListInner)
-                    )
+            },
+            actions = {
+                if (onEdit != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(appDimens().iconSizeXxl)
+                            .clip(CircleShape)
+                            .clickable(onClick = onEdit),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Outlined.Edit,
+                            contentDescription = "Edit student",
+                            tint = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.size(appDimens().iconSizeListInner)
+                        )
+                    }
                 }
             }
-        }
+        )
     }
 }
 
@@ -507,7 +510,7 @@ private fun StudentHeroCard(
                     .fillMaxWidth()
                     .padding(appDimens().spacingLg),
                 horizontalArrangement = Arrangement.spacedBy(appDimens().spacing14),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 StudentPhotoAvatar(
                     name = student.fullName,
@@ -516,21 +519,19 @@ private fun StudentHeroCard(
                     size = 80
                 )
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(appDimens().loginLogoSize),
-                    verticalArrangement = Arrangement.Center
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(appDimens().spacingXs)
                 ) {
                     Text(
                         student.fullName,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         student.studentId,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -724,20 +725,32 @@ private fun DetailField(label: String, value: String) {
 }
 
 @Composable
-private fun EnrollmentsTab(enrollments: List<Enrollment>, onOpen: (String) -> Unit) {
+private fun EnrollmentsTab(
+    enrollments: List<Enrollment>,
+    coursesById: Map<String, Course>,
+    onOpen: (String) -> Unit
+) {
     if (enrollments.isEmpty()) {
         EmptyTabMessage("No enrollments yet.")
         return
     }
     Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)) {
         enrollments.forEach { enrollment ->
-            EnrollmentCard(enrollment = enrollment, onClick = { onOpen(enrollment.enrollmentId) })
+            EnrollmentCard(
+                enrollment = enrollment,
+                courseDisplayName = enrollment.displayCourseName(coursesById),
+                onClick = { onOpen(enrollment.enrollmentId) }
+            )
         }
     }
 }
 
 @Composable
-private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
+private fun EnrollmentCard(
+    enrollment: Enrollment,
+    courseDisplayName: String,
+    onClick: () -> Unit
+) {
     val statusLabel = when (enrollment.enrollmentStatus) {
         EnrollmentStatus.Ongoing -> "Active"
         EnrollmentStatus.Completed -> "Completed"
@@ -771,7 +784,7 @@ private fun EnrollmentCard(enrollment: Enrollment, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    enrollment.courseName ?: enrollment.courseId,
+                    courseDisplayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
@@ -834,8 +847,9 @@ private fun PaymentsTab(
         EmptyTabMessage("No payments recorded yet.")
         return
     }
+    val sortedPayments = payments.sortedByDescending { it.paymentDate }
     Column(verticalArrangement = Arrangement.spacedBy(appDimens().spacingSm)) {
-        payments.forEach { payment ->
+        sortedPayments.forEach { payment ->
             PaymentCard(
                 payment = payment,
                 canVoid = canVoid,

@@ -32,6 +32,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,9 +43,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,15 +61,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.LoadState
-import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemKey
+import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
+import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.EmptyState
 import com.saicomputer.sms.core.ui.ErrorState
 import com.saicomputer.sms.core.ui.LoadingSkeleton
-import com.saicomputer.sms.core.ui.ShimmerPagingRow
 import com.saicomputer.sms.core.ui.Pill
 import com.saicomputer.sms.core.ui.ProfileMenuButton
 import com.saicomputer.sms.data.model.RegistrationSession
@@ -108,11 +110,20 @@ fun StudentsListScreen(
     user: User? = null,
     onOpenStudent: (String) -> Unit,
     onNewStudent: () -> Unit,
+    snackbarController: SnackbarController? = null,
     viewModel: StudentsListViewModel = hiltViewModel()
 ) {
     val filters by viewModel.filters.collectAsStateWithLifecycle()
-    val students = viewModel.students.collectAsLazyPagingItems()
+    val displayItems by viewModel.displayItems.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
     val searchFocus = remember { FocusRequester() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { message ->
+            snackbarController?.show(scope, message)
+        }
+    }
     var showFilterDialog by remember { mutableStateOf(false) }
     val hasActiveFilters = filters.status != "All" || filters.registrationSession != "All"
 
@@ -196,56 +207,58 @@ fun StudentsListScreen(
 
             Spacer(Modifier.height(appDimens().spacingMd))
 
-            val refreshState = students.loadState.refresh
-            when {
-                refreshState is LoadState.Loading && students.itemCount == 0 ->
-                    LoadingSkeleton(modifier = Modifier.fillMaxSize())
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = viewModel::manualRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when (val state = displayItems) {
+                    is UiState.Loading ->
+                        LoadingSkeleton(modifier = Modifier.fillMaxSize())
 
-                refreshState is LoadState.Error && students.itemCount == 0 ->
-                    ErrorState(
-                        message = (refreshState.error.message ?: "Failed to load"),
-                        onRetry = { students.retry() },
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                students.itemCount == 0 -> {
-                    val filtered = filters.search.isNotBlank() ||
-                        filters.status != "All" || filters.registrationSession != "All"
-                    if (filtered) {
-                        EmptyState(
-                            title = "No students match your filters",
-                            actionLabel = "Clear filters",
-                            onAction = viewModel::clearFilters,
+                    is UiState.Error ->
+                        ErrorState(
+                            message = state.message,
+                            onRetry = { viewModel.load(force = true) },
                             modifier = Modifier.fillMaxSize()
                         )
-                    } else {
-                        EmptyState(
-                            title = "No students yet",
-                            actionLabel = "New Student",
-                            onAction = onNewStudent,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
 
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = appDimens().spacingLg),
-                        verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
-                    ) {
-                        items(
-                            count = students.itemCount,
-                            key = students.itemKey { it.studentId }
-                        ) { index ->
-                            val student = students[index]
-                            if (student != null) {
-                                StudentRow(student = student, onClick = { onOpenStudent(student.studentId) })
+                    is UiState.Success -> {
+                        val students = state.data
+                        if (students.isEmpty()) {
+                            val filtered = filters.search.isNotBlank() ||
+                                filters.status != "All" || filters.registrationSession != "All"
+                            if (filtered) {
+                                EmptyState(
+                                    title = "No students match your filters",
+                                    actionLabel = "Clear filters",
+                                    onAction = viewModel::clearFilters,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                EmptyState(
+                                    title = "No students yet",
+                                    actionLabel = "New Student",
+                                    onAction = onNewStudent,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
-                        }
-                        if (students.loadState.append is LoadState.Loading) {
-                            item {
-                                ShimmerPagingRow()
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = appDimens().spacingLg),
+                                verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
+                            ) {
+                                items(
+                                    count = students.size,
+                                    key = { index -> students[index].studentId }
+                                ) { index ->
+                                    val student = students[index]
+                                    StudentRow(
+                                        student = student,
+                                        onClick = { onOpenStudent(student.studentId) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -262,23 +275,16 @@ private fun StudentsListHeader(
     onNewStudent: () -> Unit
 ) {
     AppTopBarBox {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Students",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        AppTitleBarRow(
+            leading = {
+                Text(
+                    "Students",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface
+                )
+            },
+            actions = {
                 Box(
                     modifier = Modifier
                         .size(appDimens().iconSizeXxl)
@@ -310,7 +316,7 @@ private fun StudentsListHeader(
                 }
                 ProfileMenuButton(user = user)
             }
-        }
+        )
     }
 }
 

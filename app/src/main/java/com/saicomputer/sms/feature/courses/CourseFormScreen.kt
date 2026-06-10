@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -53,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +63,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.saicomputer.sms.core.ui.AppTitleBarRow
+import com.saicomputer.sms.core.ui.AppTopBarBox
+import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.core.ui.FormLoadingSkeleton
 import com.saicomputer.sms.core.ui.SnackbarController
 import com.saicomputer.sms.data.model.BillingType
@@ -250,41 +255,40 @@ fun CourseFormScreen(
                 Text(state.error!!, color = MaterialTheme.colorScheme.error)
             }
 
-            Spacer(Modifier.height(appDimens().spacingSm))
-        }
-
-        Button(
-            onClick = {
-                viewModel.submit(
-                    onSaved = { onSaved() },
-                    onMessage = { msg -> snackbarController.show(scope, msg) }
+            Spacer(Modifier.height(appDimens().spacingMd))
+            Button(
+                onClick = {
+                    viewModel.submit(
+                        onSaved = { onSaved() },
+                        onMessage = { msg -> snackbarController.show(scope, msg) }
+                    )
+                },
+                enabled = state.canSubmit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(vertical = appDimens().spacingMd),
+                shape = appDimens().fieldShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
+                    disabledContentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
                 )
-            },
-            enabled = state.canSubmit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = appDimens().spacingLg, vertical = appDimens().spacingMd),
-            shape = appDimens().fieldShape,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.tertiary,
-                contentColor = MaterialTheme.colorScheme.surface,
-                disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
-                disabledContentColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-            )
-        ) {
-            if (state.submitting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(appDimens().iconSizeListInner),
-                    strokeWidth = appDimens().spacingXxs,
-                    color = MaterialTheme.colorScheme.surface
-                )
-            } else {
-                Text(
-                    if (state.isEdit) "Save Course" else "Create Course",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = appDimens().spacingXs)
-                )
+            ) {
+                if (state.submitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(appDimens().iconSizeListInner),
+                        strokeWidth = appDimens().spacingXxs,
+                        color = MaterialTheme.colorScheme.surface
+                    )
+                } else {
+                    Text(
+                        if (state.isEdit) "Save Course" else "Create Course",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = appDimens().spacingXs)
+                    )
+                }
             }
         }
     }
@@ -292,22 +296,19 @@ fun CourseFormScreen(
 
 @Composable
 private fun CourseFormHeader(title: String, onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(horizontal = appDimens().spacingXs, vertical = appDimens().spacingSm),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.surface)
-        }
-        Text(
-            title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.padding(start = appDimens().spacingXs)
+    AppTopBarBox {
+        AppTitleBarRow(
+            leading = {
+                TitleBarBackButton(onBack = onBack)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         )
     }
 }

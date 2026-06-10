@@ -78,6 +78,20 @@ the "More" menu are filtered by role.
 - Images are compressed before base64 upload; CSV exports share via FileProvider or DownloadManager.
 - Forced change-password gate on first login (`mustChangePassword`).
 
+## Documentation
+
+Full app architecture, API data flow, storage, fetch triggers, navigation, and permissions
+are documented in [`docs/README.md`](docs/README.md).
+
+| Doc | Topic |
+|-----|-------|
+| [Architecture Overview](docs/01-architecture-overview.md) | Tech stack, MVVM layers, package structure |
+| [API & Networking](docs/02-api-and-networking.md) | All 56 API actions, request/response envelope |
+| [Storage & Repositories](docs/03-storage-and-repositories.md) | Local persistence, 14 repositories, composite fetches |
+| [Data Fetch Triggers](docs/04-data-fetch-triggers.md) | **When each API is called** — bootstrap, screen load, user actions |
+| [Features & Navigation](docs/05-features-and-navigation.md) | All screens, routes, bottom nav |
+| [Auth, Roles & Startup](docs/06-auth-roles-startup.md) | Session lifecycle, permissions, startup sequence |
+
 ## Verification
 
 `./gradlew assembleDebug` compiles cleanly. Smoke-test login → students list → dashboard

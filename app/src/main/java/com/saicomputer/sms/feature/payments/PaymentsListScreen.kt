@@ -23,11 +23,13 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +49,7 @@ import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.format.REGISTRATION_SESSION_LABELS
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.result.UiState
+import com.saicomputer.sms.core.ui.AppTitleBarRow
 import com.saicomputer.sms.core.ui.AppTopBarBox
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.CurrencyText
@@ -70,6 +73,7 @@ import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.core.ui.theme.appDimens
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentsListScreen(
     user: User? = null,
@@ -78,7 +82,14 @@ fun PaymentsListScreen(
 ) {
     val filters by viewModel.filters.collectAsStateWithLifecycle()
     val displayItems by viewModel.displayItems.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { message ->
+            snackbarController.show(scope, message)
+        }
+    }
     val context = LocalContext.current
     val canVoid = can(user, "payments.void")
     val canEditBilling = can(user, "payments.editBillingMonth")
@@ -137,14 +148,19 @@ fun PaymentsListScreen(
 
             Spacer(Modifier.height(appDimens().spacingMd))
 
-            when (val s = displayItems) {
-                is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
-                is UiState.Error -> ErrorState(
-                    message = s.message,
-                    onRetry = viewModel::load,
-                    modifier = Modifier.fillMaxSize()
-                )
-                is UiState.Success -> {
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = viewModel::manualRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when (val s = displayItems) {
+                    is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
+                    is UiState.Error -> ErrorState(
+                        message = s.message,
+                        onRetry = { viewModel.load(force = true) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    is UiState.Success -> {
                     if (s.data.isEmpty()) {
                         if (viewModel.hasActiveClientFilters) {
                             EmptyState(
@@ -200,6 +216,7 @@ fun PaymentsListScreen(
                             }
                         }
                     }
+                }
                 }
             }
         }
@@ -290,21 +307,19 @@ private fun PaymentsFilterDialog(
 @Composable
 private fun PaymentsListHeader(user: User?) {
     AppTopBarBox {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = appDimens().iconSizeMd, vertical = appDimens().spacingLg),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Payment History",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.surface
-            )
-            ProfileMenuButton(user = user)
-        }
+        AppTitleBarRow(
+            leading = {
+                Text(
+                    "Payment History",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface
+                )
+            },
+            actions = {
+                ProfileMenuButton(user = user)
+            }
+        )
     }
 }
 

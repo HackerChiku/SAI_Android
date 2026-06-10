@@ -1,10 +1,7 @@
 package com.saicomputer.sms.feature.students
 
 import com.saicomputer.sms.core.ui.theme.appColors
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,11 +18,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.ui.ThemedShimmerBox
 import com.saicomputer.sms.core.ui.rememberBase64ImageBitmap
+import com.saicomputer.sms.core.ui.rememberImagePicker
 import com.saicomputer.sms.core.ui.theme.appDimens
 
 @Composable
@@ -42,16 +39,17 @@ fun PhotoViewerDialog(
 
     LaunchedEffect(studentId) { viewModel.loadPhoto(studentId) }
 
-    val picker = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null) {
-            viewModel.replacePhoto(studentId, uri, maxBytes) { ok, msg ->
-                onReplaced(msg)
-                if (ok) { viewModel.clearPhoto(); viewModel.loadPhoto(studentId) }
+    val picker = rememberImagePicker(
+        chooserTitle = "Add photo",
+        onImagePicked = { uri ->
+            if (uri != null) {
+                viewModel.replacePhoto(studentId, uri, maxBytes) { ok, msg ->
+                    onReplaced(msg)
+                    if (ok) { viewModel.reloadPhotoAfterReplace(studentId) }
+                }
             }
         }
-    }
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -79,7 +77,7 @@ fun PhotoViewerDialog(
         },
         confirmButton = {
             if (canReplace) {
-                TextButton(onClick = { picker.launch("image/*") }, enabled = !busy) {
+                TextButton(onClick = { picker.showChooser() }, enabled = !busy) {
                     Text(if (busy) "Uploading…" else "Replace Photo")
                 }
             }
@@ -105,16 +103,17 @@ fun AadhaarViewerDialog(
 
     LaunchedEffect(studentId) { viewModel.loadAadhaar(studentId) }
 
-    val picker = rememberLauncherForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null) {
-            viewModel.replaceAadhaar(studentId, uri, "image/jpeg", null, maxBytes) { ok, msg ->
-                onReplaced(msg)
-                if (ok) { viewModel.clearAadhaar(); viewModel.loadAadhaar(studentId) }
+    val picker = rememberImagePicker(
+        chooserTitle = "Add document",
+        onImagePicked = { uri ->
+            if (uri != null) {
+                viewModel.replaceAadhaar(studentId, uri, "image/jpeg", null, maxBytes) { ok, msg ->
+                    onReplaced(msg)
+                    if (ok) { viewModel.reloadAadhaarAfterReplace(studentId) }
+                }
             }
         }
-    }
+    )
 
     AlertDialog(
         onDismissRequest = { viewModel.clearAadhaar(); onDismiss() },
@@ -155,7 +154,7 @@ fun AadhaarViewerDialog(
         },
         confirmButton = {
             if (canReplace) {
-                TextButton(onClick = { picker.launch("image/*") }, enabled = !busy) {
+                TextButton(onClick = { picker.showChooser() }, enabled = !busy) {
                     Text(if (busy) "Uploading…" else "Replace Aadhaar")
                 }
             }

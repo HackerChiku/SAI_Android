@@ -24,11 +24,14 @@ import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +63,7 @@ import com.saicomputer.sms.data.model.User
 import com.saicomputer.sms.core.ui.theme.appDimens
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CertificatesListScreen(
     user: User? = null,
@@ -68,9 +72,16 @@ fun CertificatesListScreen(
     viewModel: CertificatesViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var resendFor by remember { mutableStateOf<CertificateListItem?>(null) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.refreshError.collect { message ->
+            snackbarController.show(scope, message)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         CertificatesListHeader(user = user, onBack = onBack)
@@ -83,46 +94,52 @@ fun CertificatesListScreen(
         ) {
             Spacer(Modifier.height(appDimens().spacingMd))
 
-            when (val s = state) {
-                is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
-                is UiState.Error -> ErrorState(
-                    message = s.message,
-                    onRetry = viewModel::load,
-                    modifier = Modifier.fillMaxSize()
-                )
-                is UiState.Success -> {
-                    if (s.data.isEmpty()) {
-                        EmptyState(title = "No certificates", modifier = Modifier.fillMaxSize())
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = appDimens().spacingLg),
-                            verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
-                        ) {
-                            items(s.data, key = { it.certificateId }) { certificate ->
-                                CertificateCard(
-                                    certificate = certificate,
-                                    onView = {
-                                        viewModel.loadCertificate(
-                                            certificate.certificateId,
-                                            onSuccess = { detail ->
-                                                val url = detail.previewUrl ?: detail.downloadUrl
-                                                if (url != null) {
-                                                    context.startActivity(
-                                                        Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                                    )
-                                                } else {
-                                                    snackbarController.show(
-                                                        scope,
-                                                        "Certificate ${detail.certificateId}"
-                                                    )
-                                                }
-                                            },
-                                            onError = { snackbarController.show(scope, it) }
-                                        )
-                                    },
-                                    onResend = { resendFor = certificate }
-                                )
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = viewModel::manualRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when (val s = state) {
+                    is UiState.Loading -> LoadingSkeleton(modifier = Modifier.fillMaxSize())
+                    is UiState.Error -> ErrorState(
+                        message = s.message,
+                        onRetry = { viewModel.load(force = true) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    is UiState.Success -> {
+                        if (s.data.isEmpty()) {
+                            EmptyState(title = "No certificates", modifier = Modifier.fillMaxSize())
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = appDimens().spacingLg),
+                                verticalArrangement = Arrangement.spacedBy(appDimens().spacing10)
+                            ) {
+                                items(s.data, key = { it.certificateId }) { certificate ->
+                                    CertificateCard(
+                                        certificate = certificate,
+                                        onView = {
+                                            viewModel.loadCertificate(
+                                                certificate.certificateId,
+                                                onSuccess = { detail ->
+                                                    val url = detail.previewUrl ?: detail.downloadUrl
+                                                    if (url != null) {
+                                                        context.startActivity(
+                                                            Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                                        )
+                                                    } else {
+                                                        snackbarController.show(
+                                                            scope,
+                                                            "Certificate ${detail.certificateId}"
+                                                        )
+                                                    }
+                                                },
+                                                onError = { snackbarController.show(scope, it) }
+                                            )
+                                        },
+                                        onResend = { resendFor = certificate }
+                                    )
+                                }
                             }
                         }
                     }

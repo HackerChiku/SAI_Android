@@ -1,6 +1,10 @@
 package com.saicomputer.sms.data.repo
 
 import com.saicomputer.sms.core.network.ApiClient
+import com.saicomputer.sms.core.session.Cached
+import com.saicomputer.sms.core.session.SessionCache
+import com.saicomputer.sms.core.session.SessionCacheRegistry
+import kotlinx.coroutines.flow.StateFlow
 import com.saicomputer.sms.data.dto.EditBillingMonthInput
 import com.saicomputer.sms.data.dto.InstallmentPaymentCreateInput
 import com.saicomputer.sms.data.dto.OkResponse
@@ -23,8 +27,27 @@ import javax.inject.Singleton
 
 @Singleton
 class PaymentsRepository @Inject constructor(
-    private val api: ApiClient
+    private val api: ApiClient,
+    registry: SessionCacheRegistry
 ) {
+    private val baseListCache = SessionCache<List<PaymentListItem>>(registry)
+
+    val baseListFlow: StateFlow<Cached<List<PaymentListItem>>?> = baseListCache.flow
+
+    fun getCachedBaseList(): List<PaymentListItem>? = baseListCache.value
+
+    fun isBaseListFresh(): Boolean = baseListCache.isFresh()
+
+    fun cacheBaseList(rows: List<PaymentListItem>) {
+        baseListCache.put(rows)
+    }
+
+    suspend fun refreshBaseList(): List<PaymentListItem> {
+        val rows = list(PaymentListFilters(limit = 500))
+        baseListCache.put(rows)
+        return rows
+    }
+
     suspend fun create(input: PaymentCreateInput): PaymentCreateResponse = when (input) {
         is InstallmentPaymentCreateInput -> api.call("payments.create", input)
         is SubscriptionPaymentCreateInput -> api.call("payments.create", input)

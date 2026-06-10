@@ -3,24 +3,21 @@ package com.saicomputer.sms.feature.students
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
+import com.saicomputer.sms.core.network.ApiException
+import com.saicomputer.sms.core.result.UiState
 import com.saicomputer.sms.data.model.Student
 import com.saicomputer.sms.data.repo.StudentsRepository
-import com.saicomputer.sms.data.repo.paging.StudentsPagingSource
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class StudentFilters(
@@ -29,7 +26,6 @@ data class StudentFilters(
     val registrationSession: String = "All"
 )
 
-@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class StudentsListViewModel @Inject constructor(
     private val repository: StudentsRepository,
@@ -45,44 +41,106 @@ class StudentsListViewModel @Inject constructor(
     )
     val filters: StateFlow<StudentFilters> = _filters.asStateFlow()
 
-    // Debounce search only; status/session changes apply immediately.
-    val students: Flow<PagingData<Student>> = _filters
-        .debounce { if (it.search.isBlank()) 0L else 300L }
-        .distinctUntilChanged()
-        .flatMapLatest { f ->
-            Pager(
-                config = PagingConfig(pageSize = 50, initialLoadSize = 50, enablePlaceholders = false)
-            ) {
-                StudentsPagingSource(
-                    repo = repository,
-                    search = f.search,
-                    status = f.status,
-                    registrationSession = f.registrationSession
-                )
-            }.flow
+    private val _displayItems = MutableStateFlow<UiState<List<Student>>>(UiState.Loading)
+    val displayItems: StateFlow<UiState<List<Student>>> = _displayItems.asStateFlow()
+
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    private val _refreshError = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val refreshError: SharedFlow<String> = _refreshError.asSharedFlow()
+
+    private var searchJob: Job? = null
+
+    init {
+        loadInitial()
+    }
+
+    private fun loadInitial() {
+        val cached = repository.getCachedBaseList()
+        if (cached != null) {
+            publishFromRaw(cached)
+            if (!repository.isBaseListFresh()) {
+                refreshSilently()
+            }
+        } else {
+            load(force = true)
         }
-        .cachedIn(viewModelScope)
+    }
+
+    fun manualRefresh() {
+        if (_refreshing.value) return
+        _refreshing.value = true
+        viewModelScope.launch {
+            try {
+                publishFromRaw(repository.refreshBaseList())
+            } catch (e: Exception) {
+                _refreshError.emit(friendlyMessage(e))
+            } finally {
+                _refreshing.value = false
+            }
+        }
+    }
+
+    fun load(force: Boolean = true) {
+        if (force) _displayItems.value = UiState.Loading
+        viewModelScope.launch {
+            try {
+                publishFromRaw(repository.refreshBaseList())
+            } catch (e: ApiException) {
+                _displayItems.value = UiState.Error(e.friendlyMessage())
+            } catch (e: Exception) {
+                _displayItems.value = UiState.Error(e.message ?: "Failed to load students")
+            }
+        }
+    }
+
+    private fun refreshSilently() {
+        viewModelScope.launch {
+            runCatching { repository.refreshBaseList() }
+                .onSuccess { publishFromRaw(it) }
+        }
+    }
+
+    private fun publishFromRaw(raw: List<Student>) {
+        if (_displayItems.value is UiState.Error) return
+        _displayItems.value = UiState.Success(applyStudentFilters(raw, _filters.value))
+    }
 
     fun onSearchChange(value: String) {
         savedStateHandle[KEY_SEARCH] = value
         _filters.update { it.copy(search = value) }
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(if (value.isBlank()) 0L else 300L)
+            repository.getCachedBaseList()?.let { publishFromRaw(it) }
+        }
     }
 
     fun onStatusChange(value: String) {
         savedStateHandle[KEY_STATUS] = value
         _filters.update { it.copy(status = value) }
+        repository.getCachedBaseList()?.let { publishFromRaw(it) }
     }
 
     fun onSessionChange(value: String) {
         savedStateHandle[KEY_SESSION] = value
         _filters.update { it.copy(registrationSession = value) }
+        repository.getCachedBaseList()?.let { publishFromRaw(it) }
     }
 
     fun clearFilters() {
+        searchJob?.cancel()
         savedStateHandle[KEY_SEARCH] = ""
         savedStateHandle[KEY_STATUS] = "All"
         savedStateHandle[KEY_SESSION] = "All"
         _filters.value = StudentFilters()
+        repository.getCachedBaseList()?.let { publishFromRaw(it) } ?: load(force = true)
+    }
+
+    private fun friendlyMessage(error: Throwable): String = when (error) {
+        is ApiException -> error.friendlyMessage()
+        else -> error.message ?: "Refresh failed"
     }
 
     companion object {

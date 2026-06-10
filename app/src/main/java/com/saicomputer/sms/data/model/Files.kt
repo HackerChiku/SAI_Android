@@ -10,6 +10,11 @@ data class FileBase64Response(
     val size: Int = 0
 )
 
+enum class StudentDocumentType {
+    Photo,
+    Aadhaar
+}
+
 enum class EmailStatus { NotSent, Queued, Sent, Failed, NotApplicable }
 
 @Serializable

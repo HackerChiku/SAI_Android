@@ -1,6 +1,7 @@
 package com.saicomputer.sms.data.repo
 
 import com.saicomputer.sms.core.network.ApiClient
+import com.saicomputer.sms.core.auth.SavedAccountsStore
 import com.saicomputer.sms.core.session.SessionManager
 import com.saicomputer.sms.data.dto.ChangePasswordInput
 import com.saicomputer.sms.data.dto.LoginInput
@@ -14,11 +15,13 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepository @Inject constructor(
     private val api: ApiClient,
-    private val session: SessionManager
+    private val session: SessionManager,
+    private val savedAccountsStore: SavedAccountsStore
 ) {
     suspend fun login(email: String, password: String): User {
         val res: LoginResponse = api.call("auth.login", LoginInput(email.trim(), password))
         session.setSession(res.sessionToken, res.user)
+        savedAccountsStore.save(res.user)
         return res.user
     }
 

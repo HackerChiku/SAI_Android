@@ -19,14 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
-import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,13 +36,10 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,14 +51,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -71,6 +60,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.saicomputer.sms.core.format.Formatters
 import com.saicomputer.sms.core.permission.can
 import com.saicomputer.sms.core.ui.AmountField
+import com.saicomputer.sms.core.ui.AppTitleBarRow
+import com.saicomputer.sms.core.ui.AppTopBarBox
+import com.saicomputer.sms.core.ui.BackdateEntryCard
+import com.saicomputer.sms.core.ui.TitleBarBackButton
 import com.saicomputer.sms.core.ui.ColoredPhotoAvatar
 import com.saicomputer.sms.core.ui.LoadingSkeleton
 import com.saicomputer.sms.core.ui.DatePickerField
@@ -185,21 +178,19 @@ fun EnrollmentWizardScreen(
 
 @Composable
 private fun WizardHeader(onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(horizontal = appDimens().spacingXs, vertical = appDimens().spacingSm),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.surface)
-        }
-        Text(
-            "New Enrollment",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.surface
+    AppTopBarBox {
+        AppTitleBarRow(
+            leading = {
+                TitleBarBackButton(onBack = onBack)
+                Text(
+                    "New Enrollment",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         )
     }
 }
@@ -772,67 +763,6 @@ private fun WizardFooter(
     }
 }
 
-@Composable
-private fun BackdateEntryCard(
-    enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit,
-    date: String?,
-    onDateChange: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .dashedBorder(
-                appColors().warning.copy(alpha = 0.65f),
-                appDimens().strokeDashed,
-                appDimens().spacingMd
-            )
-            .background(appColors().warningContainer, appDimens().fieldShape)
-            .padding(appDimens().spacing14),
-        verticalArrangement = Arrangement.spacedBy(appDimens().spacingMd)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(appDimens().spacing10)
-        ) {
-            Icon(Icons.Outlined.CalendarMonth, contentDescription = null, tint = appColors().warning, modifier = Modifier.size(appDimens().iconSizeXl))
-            Text(
-                "Record as backdated entry",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = appColors().warning,
-                modifier = Modifier.weight(1f)
-            )
-            Switch(
-                checked = enabled,
-                onCheckedChange = onEnabledChange,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.surface,
-                    checkedTrackColor = appColors().warning,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.surface,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant
-                )
-            )
-        }
-        if (enabled) {
-            DatePickerField(
-                value = date ?: LocalDate.now().toString(),
-                onValueChange = onDateChange,
-                label = "Entry date"
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(appDimens().spacingSm), verticalAlignment = Alignment.Top) {
-                Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = appColors().warning, modifier = Modifier.size(appDimens().iconSizeSm))
-                Text(
-                    "No confirmation email will be sent automatically. Receipt PDF will still be generated.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = appColors().warning
-                )
-            }
-        }
-    }
-}
-
 private fun relativeDueLabel(startDate: String, dueDate: String, fallbackIndex: Int): String {
     val months = runCatching {
         val start = LocalDate.parse(startDate)
@@ -840,12 +770,4 @@ private fun relativeDueLabel(startDate: String, dueDate: String, fallbackIndex: 
         ChronoUnit.MONTHS.between(start, due).coerceAtLeast(1)
     }.getOrDefault(fallbackIndex.toLong())
     return "Due: $months month(s)"
-}
-
-private fun Modifier.dashedBorder(color: Color, strokeWidth: Dp, cornerRadius: Dp): Modifier = drawBehind {
-    val stroke = Stroke(
-        width = strokeWidth.toPx(),
-        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f))
-    )
-    drawRoundRect(color = color, cornerRadius = CornerRadius(cornerRadius.toPx()), style = stroke)
 }
